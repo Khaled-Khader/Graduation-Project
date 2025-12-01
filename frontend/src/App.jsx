@@ -6,7 +6,7 @@ import OpenPage from "./pages/OpenPage"
 import SigninPage from "./pages/SigninPage"
 import SignupPage from "./pages/SignupPage"
 import RolesPage from "./pages/RolesPage"
-
+import PostsPage from "./pages/PostsPage"
 
 export default function App(){
 
@@ -16,7 +16,8 @@ export default function App(){
       {path:"/",element:<OpenPage/>},
       {path:"/sign-in",element:<SigninPage/>},
       {path:"/roles",element:<RolesPage/>},
-      {path:"/sign-up/:roleId",element:<SignupPage/>}
+      {path:"/sign-up/:roleId",element:<SignupPage/>},
+      {path:"/posts",element:<PostsPage/>},
     ]
   )
   return(

@@ -1,10 +1,15 @@
 package com.GraduationProject.GraduationProject.Service;
 
-import com.GraduationProject.GraduationProject.DTO.UsersRequestDTO;
+import com.GraduationProject.GraduationProject.DTO.UserLoginDTO;
+import com.GraduationProject.GraduationProject.DTO.UsersRegisterDTO;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Repository.*;
+import io.jsonwebtoken.Jwts;
 import jakarta.transaction.Transactional;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,48 +19,54 @@ public class UsersService {
 
     private final UsersRepository usersRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JWTService jwtService;
 
     public UsersService(UsersRepository usersRepository ,
-                        BCryptPasswordEncoder bCryptPasswordEncoder
+                        BCryptPasswordEncoder bCryptPasswordEncoder,
+                        AuthenticationManager authenticationManager,
+                        JWTService jwtService
                         ) {
         this.usersRepository = usersRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
 
     }
 
-    public Users addUser(UsersRequestDTO usersRequestDTO){
-        if(usersRepository.existsByEmail(usersRequestDTO.email())){
+    public Users addUser(UsersRegisterDTO usersRegisterDTO){
+        if(usersRepository.existsByEmail(usersRegisterDTO.email())){
             throw new RuntimeException("Email already exists");
         }
         Users users = new Users();
-        users.setEmail(usersRequestDTO.email());
-        users.setPasswordHash(bCryptPasswordEncoder.encode(usersRequestDTO.passwordHash()));
-        users.setRole(usersRequestDTO.role());
+        users.setEmail(usersRegisterDTO.email());
+        users.setPasswordHash(bCryptPasswordEncoder.encode(usersRegisterDTO.passwordHash()));
+        users.setRole(usersRegisterDTO.role());
 
 
         UserInfo userInfo = new UserInfo();
         userInfo.setUsers(users);
-        userInfo.setFirstName(usersRequestDTO.userInfoDTO().firstName());
-        userInfo.setLastName(usersRequestDTO.userInfoDTO().lastName());
-        userInfo.setBio(usersRequestDTO.userInfoDTO().bio());
+        userInfo.setFirstName(usersRegisterDTO.userInfoDTO().firstName());
+        userInfo.setLastName(usersRegisterDTO.userInfoDTO().lastName());
+        userInfo.setBio(usersRegisterDTO.userInfoDTO().bio());
 
         users.setUserInfo(userInfo);
 
-        switch (usersRequestDTO.role()){
+        switch (usersRegisterDTO.role()){
             case EnumRole.VET:
                 Vet vet = new Vet();
                 vet.setUsers(users);
-                vet.setSpecialty(usersRequestDTO.vetDTO().specialty());
+                vet.setSpecialty(usersRegisterDTO.vetDTO().specialty());
                 users.setVet(vet);
                 break;
 
                 case EnumRole.CLINIC:
                     Clinic clinic = new Clinic();
                     clinic.setUsers(users);
-                    clinic.setCity(usersRequestDTO.clinicDTO().city());
-                    clinic.setAddress(usersRequestDTO.clinicDTO().address());
-                    clinic.setLatitude(usersRequestDTO.clinicDTO().latitude());
-                    clinic.setLongitude(usersRequestDTO.clinicDTO().longitude());
+                    clinic.setCity(usersRegisterDTO.clinicDTO().city());
+                    clinic.setAddress(usersRegisterDTO.clinicDTO().address());
+                    clinic.setLatitude(usersRegisterDTO.clinicDTO().latitude());
+                    clinic.setLongitude(usersRegisterDTO.clinicDTO().longitude());
                     users.setClinic(clinic);
                     break;
 
@@ -69,6 +80,18 @@ public class UsersService {
         }
         usersRepository.save(users);
         return users;
+    }
+
+    public String verify(UserLoginDTO userLoginDTO) {
+        Authentication authentication =
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(userLoginDTO.email(), userLoginDTO.passwordHash())
+                );
+
+        if (authentication.isAuthenticated()) {
+            return jwtService.generateJWTToken(userLoginDTO.email());
+        }
+        return "Invalid username or password";
     }
 
 

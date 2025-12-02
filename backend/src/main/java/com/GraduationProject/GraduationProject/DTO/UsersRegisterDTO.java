@@ -2,7 +2,7 @@ package com.GraduationProject.GraduationProject.DTO;
 
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 
-public record UsersRequestDTO(
+public record UsersRegisterDTO(
         String email,
         String passwordHash,
         EnumRole role,

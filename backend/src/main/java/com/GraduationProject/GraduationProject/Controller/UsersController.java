@@ -1,6 +1,7 @@
 package com.GraduationProject.GraduationProject.Controller;
 
-import com.GraduationProject.GraduationProject.DTO.UsersRequestDTO;
+import com.GraduationProject.GraduationProject.DTO.UserLoginDTO;
+import com.GraduationProject.GraduationProject.DTO.UsersRegisterDTO;
 import com.GraduationProject.GraduationProject.Service.UsersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +18,27 @@ public class UsersController {
     }
 
     @PostMapping("/register")
-    public void registerUser(@RequestBody UsersRequestDTO usersRequestDTO) {
-        usersService.addUser(usersRequestDTO);
+    public void registerUser(@RequestBody UsersRegisterDTO usersRegisterDTO) {
+        usersService.addUser(usersRegisterDTO);
     }
 
+    @PostMapping("/login")
+    public String loginUser(@RequestBody UserLoginDTO userLoginDTO) {
+        return usersService.verify(userLoginDTO);
+    }
+
+    @GetMapping("/test")
+    public String test() {
+        return "test";
+    }
+
+    @GetMapping("/testAgain")
+    public String testAgain() {
+        return "testAgain";
+    }
+
+
+    //Just for testing
     @DeleteMapping("/testing")
     public void deleteUser() {
         usersService.deleteAllTestData();

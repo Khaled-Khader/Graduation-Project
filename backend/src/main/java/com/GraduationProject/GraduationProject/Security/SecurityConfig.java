@@ -50,6 +50,7 @@ public class SecurityConfig {
                        //Enable us to use Postman for api testing purposes
                        //if we don't write this the postman will not auth the requests
                        .httpBasic(Customizer.withDefaults())
+                       //add this filter to be before usernamepassword filter
                        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                        .build();
 

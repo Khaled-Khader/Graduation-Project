@@ -3,36 +3,43 @@ package com.GraduationProject.GraduationProject.Entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+
 
 
 @Data
 @NoArgsConstructor
-@RequiredArgsConstructor
 @Entity
 @Table(name = "user_profile")
-public class UserProfile {
+public class UserInfo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name="user_id")
     private Long id;
 
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "user_id")
+    private Users users;
+
     @Column(name = "first_name")
-    @NonNull
     private String firstName;
 
     @Column(name = "last_name")
-    @NonNull
     private String lastName;
 
     @Column(name ="photo_url")
-    @NonNull
     private String photoUrl;
 
     @Column(name = "bio")
-    @NonNull
     private String bio;
+
+    public UserInfo(String firstName, String lastName, String photoUrl, String bio) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.photoUrl = photoUrl;
+        this.bio = bio;
+    }
+
 
 
 }

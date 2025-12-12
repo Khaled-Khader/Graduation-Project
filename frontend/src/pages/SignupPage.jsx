@@ -10,11 +10,16 @@ import AccountInfo from "../components/Signup components/AccountInfo"
 import BasicInfo from "../components/Signup components/BasicInfo"
 
 
+
     //get role id from the router url
     
     export default function SignUpPage() {
 
         const {roleId}=useParams()
+
+        
+
+        
 
     let content
     //choose which role to sign up

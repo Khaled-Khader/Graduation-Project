@@ -1,17 +1,21 @@
 package com.GraduationProject.GraduationProject.Service;
 
+import com.GraduationProject.GraduationProject.DTO.LoginResult;
 import com.GraduationProject.GraduationProject.DTO.UserLoginDTO;
+import com.GraduationProject.GraduationProject.DTO.UserResponseDTO;
 import com.GraduationProject.GraduationProject.DTO.UsersRegisterDTO;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Repository.*;
-import io.jsonwebtoken.Jwts;
 import jakarta.transaction.Transactional;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Transactional
@@ -32,6 +36,10 @@ public class UsersService {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
 
+    }
+
+    public boolean isUserExists(String email) {
+        return usersRepository.existsByEmail(email);
     }
 
     public Users addUser(UsersRegisterDTO usersRegisterDTO){
@@ -82,16 +90,35 @@ public class UsersService {
         return users;
     }
 
-    public String verify(UserLoginDTO userLoginDTO) {
-        Authentication authentication =
-                authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(userLoginDTO.email(), userLoginDTO.passwordHash())
-                );
+    public Users getUserByEmail(String email){
+        return usersRepository.findByEmail(email);
+    }
 
-        if (authentication.isAuthenticated()) {
-            return jwtService.generateJWTToken(userLoginDTO.email());
+    public LoginResult verify(UserLoginDTO userLoginDTO) {
+
+
+
+        try {
+            Authentication authentication =
+                    authenticationManager.authenticate(
+                            new UsernamePasswordAuthenticationToken(userLoginDTO.email(), userLoginDTO.passwordHash())
+                    );
+
+            Users user = usersRepository.findByEmail(userLoginDTO.email());
+
+            String jwt=jwtService.generateJWTToken(userLoginDTO.email(), user.getRole().name());
+
+            UserResponseDTO userResponseDTO=new UserResponseDTO(
+                    user.getEmail(),
+                    user.getRole().toString(),
+                    user.getId()
+            );
+            LoginResult loginResult=new LoginResult(jwt,userResponseDTO);
+            return loginResult;
+        }catch (Exception e){
+            return null;
         }
-        return "Invalid username or password";
+
     }
 
 

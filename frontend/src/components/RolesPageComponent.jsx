@@ -58,8 +58,8 @@ import { Link } from "react-router-dom";
         >
 
             {/* CARD TEMPLATE */}
-            {ROLES.map((role) => (
-                <Link to={`/sign-up/${role.id}`}>
+            {ROLES.map((role,index) => (
+                <Link to={`/sign-up/${role.id}`} key={index}>
                     <div
                         key={role.label}
                         className="flex flex-col items-center cursor-pointer group"

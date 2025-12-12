@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -26,30 +27,36 @@ public class SecurityConfig {
     private final JWTFilter jwtFilter;
 
     @Autowired
-    public SecurityConfig(UserDetailsService userDetailsService, JWTFilter jwtFilter) {
+    public SecurityConfig(UserDetailsService userDetailsService,
+                          JWTFilter jwtFilter
+    ) {
         this.userDetailsService = userDetailsService;
         this.jwtFilter = jwtFilter;
     }
 
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   CorsConfigurationSource corsConfigurationSource
+    ) throws Exception {
 
        return
                http
                        //Disable CSRF Attack
                 .csrf(csrf -> csrf.disable())
+                       .cors(cors -> cors.configurationSource(corsConfigurationSource))
                        .authenticationProvider(authenticationProvider())
                        .authorizeHttpRequests(authorizeRequests ->
-                               authorizeRequests.requestMatchers("/users/register")
+                               authorizeRequests.requestMatchers("/users/register","/users/login","/users/auth")
                                                .permitAll()
+                                       .requestMatchers("/clinic/**").hasRole("CLINIC")
+                                       .requestMatchers("/vet/**").hasRole("VET")
+                                       .requestMatchers("/admin/**").hasRole("ADMIN")
+                                       .requestMatchers("/owner/**").hasRole("OWNER")
                                .anyRequest().authenticated())
                        //Make the system stateless
                        .sessionManagement(sessionManagement ->
                                sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                       //Enable us to use Postman for api testing purposes
-                       //if we don't write this the postman will not auth the requests
-                       .httpBasic(Customizer.withDefaults())
                        //add this filter to be before usernamepassword filter
                        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                        .build();

@@ -19,22 +19,23 @@ public class JWTService {
     @Value("${jwt.secret}")
     private  String secretKey;
 
-    public String generateJWTToken(String email) {
+    public String generateJWTToken(String email,String role) {
 
         Map<String, Object> claims = new HashMap<String, Object>();
-
+                claims.put("role",role);
         return Jwts.builder()
-                .claims()
-                .add(claims)
+                .claims(claims)
                 .subject(email)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis()+60*60*20))
-                .and()
+                .expiration(new Date(System.currentTimeMillis()+1000L * 60 * 60 * 24))
                 .signWith(getSecretKey())
                 .compact();
 
     }
 
+    public String extractRole(String token){
+        return extractAllClaims(token).get("role",String.class);
+    }
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }

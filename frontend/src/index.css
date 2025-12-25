@@ -9,3 +9,49 @@
         @apply rounded-xl bg-[#ECEEF3] py-3 px-4 text-[#0A1B70] outline-none shadow-[inset_0_0_15px_#b3b6c5,0_8px_20px_rgba(0,0,0,0.25)];
     }
 }
+
+/* =========================
+   PetNexus Dark Scrollbar
+   ========================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(10, 57, 224, 0.9) rgba(10, 15, 41, 0.6);
+}
+
+/* Chrome / Edge / Safari */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* DARK TRACK (no white) */
+*::-webkit-scrollbar-track {
+  background: rgba(10, 15, 41, 0.6); /* same as theme bg */
+  border-radius: 10px;
+}
+
+/* NEON THUMB */
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    #0A39E0,
+    #3A00C9
+  );
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(10, 57, 224, 0.6);
+}
+
+/* Hover effect */
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    #3A00C9,
+    #0A39E0
+  );
+}

@@ -1,6 +1,10 @@
-    import { NavLink } from "react-router-dom";
+    import { NavLink, useNavigate } from "react-router-dom";
+    import { LogoutFetchData } from "../util/http";
+    import { useMutation,useQueryClient } from "@tanstack/react-query";
 
     export default function MainNavigation() {
+    const navigate = useNavigate();
+    const queryClient=useQueryClient()
     const base =
         "flex items-center gap-2 px-3 py-2 rounded-full transition-all text-sm";
 
@@ -10,6 +14,37 @@
     const inactive =
         "text-white/80 hover:text-white hover:bg-white/10";
 
+        const { mutate: logout, isPending } = useMutation({
+    mutationFn: LogoutFetchData,
+
+    onSuccess: async () => {
+    
+    await queryClient.cancelQueries();
+
+    
+    queryClient.setQueryData(["user"], null);
+
+    
+    queryClient.clear();
+
+    
+    await Promise.resolve();
+
+    
+    navigate("/sign-in", { replace: true });
+    },
+
+    onError: (error) => {
+        console.error("Logout error:", error);
+    },
+});
+
+
+    function handleLogout() {
+    logout();
+    }
+
+    
     return (
         <nav
         className="
@@ -100,10 +135,23 @@
             >
                 👤 <span className="hidden sm:inline">Profile</span>
             </NavLink>
+
+            {/* LOGOUT */}
+            <button
+                onClick={handleLogout}
+                className={`
+                ${base}
+                text-red-400
+                hover:text-red-300
+                hover:bg-red-500/10
+                `}
+            >
+                🚪 <span className="hidden sm:inline">Logout</span>
+            </button>
             </div>
         </div>
 
-        {/* MOBILE SEARCH (OPTIONAL, clean) */}
+        {/* MOBILE SEARCH */}
         <div className="md:hidden px-4 pb-3">
             <input
             type="text"

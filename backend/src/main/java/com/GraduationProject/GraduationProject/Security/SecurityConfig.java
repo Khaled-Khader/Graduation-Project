@@ -53,8 +53,9 @@ public class SecurityConfig {
                                        .requestMatchers("/vet/**").hasRole("VET")
                                        .requestMatchers("/admin/**").hasRole("ADMIN")
                                        .requestMatchers("/owner/**").hasRole("OWNER")
+                                       .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET","OWNER")
                                .anyRequest().authenticated())
-                       //Make the system stateless
+                       //make the system stateless
                        .sessionManagement(sessionManagement ->
                                sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                        //add this filter to be before usernamepassword filter

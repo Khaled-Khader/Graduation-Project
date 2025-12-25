@@ -1,61 +1,56 @@
-    export default function ClinicSignupPageComponent() {
+    export default function ClinicSignupPageComponent({
+    latitude, setLatitude,
+    longitude, setLongitude,
+    city, setCity,
+    address, setAddress
+    }) {
     return (
-        <div className="bg-[#D6DAE3]/80 rounded-2xl p-6 shadow-[0_0_50px_#0A1B70] w-full">
-        <h2 className="text-2xl font-bold text-[#0A1B70] mb-4">
-            Clinic Information
-        </h2>
+        <div className="bg-[#D6DAE3]/80 rounded-2xl p-6 shadow-[0_0_50px_#0A1B70]">
+        <h2 className="text-2xl font-bold text-[#0A1B70] mb-4">Clinic Information</h2>
 
         <div className="flex flex-col gap-5">
 
-            {/* Latitude */}
             <div className="flex flex-col">
-            <label className="text-sm font-semibold text-[#0A1B70]">
-                Latitude
-            </label>
+            <label className="text-sm font-semibold text-[#0A1B70]">Latitude</label>
             <input
                 type="number"
-                name="latitude"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
                 className="input-style"
                 placeholder="Enter latitude"
             />
             </div>
 
-            {/* Longitude */}
             <div className="flex flex-col">
-            <label className="text-sm font-semibold text-[#0A1B70]">
-                Longitude
-            </label>
+            <label className="text-sm font-semibold text-[#0A1B70]">Longitude</label>
             <input
                 type="number"
-                name="longitude"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
                 className="input-style"
                 placeholder="Enter longitude"
             />
             </div>
 
-            {/* City */}
             <div className="flex flex-col">
-            <label className="text-sm font-semibold text-[#0A1B70]">
-                City
-            </label>
+            <label className="text-sm font-semibold text-[#0A1B70]">City</label>
             <input
                 type="text"
-                name="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
                 className="input-style"
                 placeholder="Enter city"
             />
             </div>
 
-            {/* Address */}
             <div className="flex flex-col">
-            <label className="text-sm font-semibold text-[#0A1B70]">
-                Address
-            </label>
+            <label className="text-sm font-semibold text-[#0A1B70]">Address</label>
             <input
                 type="text"
-                name="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
                 className="input-style"
-                placeholder="Enter full clinic address"
+                placeholder="Enter address"
             />
             </div>
 

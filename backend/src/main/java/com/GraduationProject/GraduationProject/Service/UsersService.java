@@ -6,6 +6,7 @@ import com.GraduationProject.GraduationProject.DTO.UserResponseDTO;
 import com.GraduationProject.GraduationProject.DTO.UsersRegisterDTO;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
 import com.GraduationProject.GraduationProject.Repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,53 +43,63 @@ public class UsersService {
         return usersRepository.existsByEmail(email);
     }
 
-    public Users addUser(UsersRegisterDTO usersRegisterDTO){
-        if(usersRepository.existsByEmail(usersRegisterDTO.email())){
-            throw new RuntimeException("Email already exists");
+    public LoginResult addUser(UsersRegisterDTO usersRegisterDTO) {
+        if (usersRepository.existsByEmail(usersRegisterDTO.email())) {
+            throw new EmailAlreadyExistsException("Email Already Exists");
         }
+
         Users users = new Users();
         users.setEmail(usersRegisterDTO.email());
         users.setPasswordHash(bCryptPasswordEncoder.encode(usersRegisterDTO.passwordHash()));
         users.setRole(usersRegisterDTO.role());
 
-
+        // User info
         UserInfo userInfo = new UserInfo();
         userInfo.setUsers(users);
         userInfo.setFirstName(usersRegisterDTO.userInfoDTO().firstName());
         userInfo.setLastName(usersRegisterDTO.userInfoDTO().lastName());
         userInfo.setBio(usersRegisterDTO.userInfoDTO().bio());
-
         users.setUserInfo(userInfo);
 
-        switch (usersRegisterDTO.role()){
-            case EnumRole.VET:
+        // Role-specific entities
+        switch (usersRegisterDTO.role()) {
+            case VET -> {
                 Vet vet = new Vet();
                 vet.setUsers(users);
                 vet.setSpecialty(usersRegisterDTO.vetDTO().specialty());
                 users.setVet(vet);
-                break;
-
-                case EnumRole.CLINIC:
-                    Clinic clinic = new Clinic();
-                    clinic.setUsers(users);
-                    clinic.setCity(usersRegisterDTO.clinicDTO().city());
-                    clinic.setAddress(usersRegisterDTO.clinicDTO().address());
-                    clinic.setLatitude(usersRegisterDTO.clinicDTO().latitude());
-                    clinic.setLongitude(usersRegisterDTO.clinicDTO().longitude());
-                    users.setClinic(clinic);
-                    break;
-
-            case EnumRole.OWNER:
+            }
+            case CLINIC -> {
+                Clinic clinic = new Clinic();
+                clinic.setUsers(users);
+                clinic.setCity(usersRegisterDTO.clinicDTO().city());
+                clinic.setAddress(usersRegisterDTO.clinicDTO().address());
+                clinic.setLatitude(usersRegisterDTO.clinicDTO().latitude());
+                clinic.setLongitude(usersRegisterDTO.clinicDTO().longitude());
+                users.setClinic(clinic);
+            }
+            case OWNER -> {
                 Owner owner = new Owner();
                 owner.setUsers(users);
                 users.setOwner(owner);
-                break;
-
-
+            }
         }
+
+        // Save user
         usersRepository.save(users);
-        return users;
+
+        // Generate JWT directly
+        String jwt = jwtService.generateJWTToken(users.getEmail(), users.getRole().toString());
+
+        UserResponseDTO userResponseDTO = new UserResponseDTO(
+                users.getEmail(),
+                users.getRole().toString(),
+                users.getId()
+        );
+
+        return new LoginResult(jwt, userResponseDTO);
     }
+
 
     public Users getUserByEmail(String email){
         return usersRepository.findByEmail(email);
@@ -120,6 +131,8 @@ public class UsersService {
         }
 
     }
+
+
 
 
     @Transactional

@@ -18,7 +18,6 @@
         },
 
         onSuccess: (userData) => {
-        
         queryClient.setQueryData(["user"], userData);
         },
     });

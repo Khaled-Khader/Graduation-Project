@@ -18,7 +18,7 @@ public class CorsConfig {
         config.setAllowCredentials(true);
 
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",     // React dev
+                "http://localhost:5173",
                 "http://127.0.0.1:3000"
         ));
 
@@ -28,7 +28,7 @@ public class CorsConfig {
 
         config.setExposedHeaders(List.of("Set-Cookie"));
 
-        config.setMaxAge(3600L); // cache preflight 1 hour
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

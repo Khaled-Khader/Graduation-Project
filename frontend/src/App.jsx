@@ -58,13 +58,11 @@ export default function App(){
   )
   return(
     <>
-    <QueryClientProvider client={query}>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider> 
-    </QueryClientProvider>
-    
-      
+      <QueryClientProvider client={query}>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider> 
+      </QueryClientProvider>
     </>
   )
 }

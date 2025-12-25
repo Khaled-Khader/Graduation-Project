@@ -1,79 +1,162 @@
-//router imports
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useRegister } from "../hooks/RegisterHook";
+import { useQueryClient } from "@tanstack/react-query";
 
+import AccountInfo from "../components/Signup components/AccountInfo";
+import BasicInfo from "../components/Signup components/BasicInfo";
 
-//Components import
-import OwnerSignupPageComponent from "../components/Signup components/OwnerSignupPageComponent"
-import VetSignupPageComponent from "../components/Signup components/VetSignupPageComponent"
-import ClinicSignupPageComponent from "../components/Signup components/clinicSignupPageComponent"
-import AccountInfo from "../components/Signup components/AccountInfo"
-import BasicInfo from "../components/Signup components/BasicInfo"
+import OwnerSignupPageComponent from "../components/Signup components/OwnerSignupPageComponent";
+import VetSignupPageComponent from "../components/Signup components/VetSignupPageComponent";
+import ClinicSignupPageComponent from "../components/Signup components/ClinicSignupPageComponent";
 
+export default function SignUpPage() {
+    const { roleId } = useParams();
+    const navigate = useNavigate();
+    const register = useRegister();
+    const queryClient=useQueryClient()
 
+    // Account Info
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+    const [backendEmailError, setBackendEmailError] = useState("");
+    const [emailFormatError, setEmailFormatError] = useState("");
 
-    //get role id from the router url
-    
-    export default function SignUpPage() {
+    // User Info
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [bio, setBio] = useState("");
 
-        const {roleId}=useParams()
+    // Vet Info
+    const [specialty, setSpecialty] = useState("");
 
-        
+    // Clinic Info
+    const [latitude, setLatitude] = useState("");
+    const [longitude, setLongitude] = useState("");
+    const [city, setCity] = useState("");
+    const [address, setAddress] = useState("");
 
-        
+    // Role-based content
+    let content;
+    if (roleId === "1") content = <OwnerSignupPageComponent />;
+    else if (roleId === "2")
+        content = <VetSignupPageComponent specialty={specialty} setSpecialty={setSpecialty} />;
+    else if (roleId === "3")
+        content = (
+            <ClinicSignupPageComponent
+                latitude={latitude} setLatitude={setLatitude}
+                longitude={longitude} setLongitude={setLongitude}
+                city={city} setCity={setCity}
+                address={address} setAddress={setAddress}
+            />
+        );
 
-    let content
-    //choose which role to sign up
-    if(roleId==='1')
-        content=<OwnerSignupPageComponent/>
-    else if(roleId==='2')
-        content=<VetSignupPageComponent/>
-    else if(roleId==='3')
-        content=<ClinicSignupPageComponent/>
+    // Email validation regex
+    function validateEmail(email) {
+        const gmailRegex = /^[a-zA-Z0-9](?!.*\.\.)[a-zA-Z0-9._+]{0,63}[a-zA-Z0-9]@gmail\.com$/;
+        return gmailRegex.test(email);
+    }
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        // Email format validation
+        if (!validateEmail(email)) {
+            setEmailFormatError("Invalid email format");
+            return;
+        } else {
+            setEmailFormatError("");
+        }
+
+        // Password validation
+        if (password !== confirmPassword) {
+            setPasswordError("Passwords do not match");
+            return;
+        } else {
+            setPasswordError("");
+        }
+
+        // Construct DTO
+        const dto = {
+            email,
+            passwordHash: password,
+            role: roleId === "1" ? "OWNER" : roleId === "2" ? "VET" : roleId === "3" ? "CLINIC" : null,
+            userInfoDTO: { firstName, lastName, bio },
+            vetDTO: roleId === "2" ? { specialty } : null,
+            clinicDTO: roleId === "3" ? { latitude, longitude, city, address } : null,
+        };
+
+        register.mutate(dto, {
+            onSuccess: async() => {
+                await queryClient.invalidateQueries(["user"]);
+                navigate("/app");
+            },
+            onError: (err) => {
+                if (err.message.includes("Email Already Exists")) {
+                    setBackendEmailError(err.message);
+                } else {
+                    alert(err.message);
+                }
+            },
+        });
+    };
 
     return (
         <div className="min-h-screen w-full bg-[#050B24] flex justify-center items-start py-14 px-4">
-        <form
-            className="
-            w-full 
-            max-w-3xl 
-            flex 
-            flex-col 
-            gap-10 
-            bg-white/10 
-            backdrop-blur-xl 
-            rounded-3xl 
-            p-10 
-            shadow-[0_0_80px_#0A1B70] 
-            border border-white/10
-            "
-        >
-            {/* Sections */}
-            <AccountInfo />
-            <BasicInfo />
-            {/* If rendering vet info or clinic info, add here */}
-            {content}
-            {/* Submit Button */}
-            <button
-            type="submit"
-            className="
-                mt-2 
-                bg-[#0A39E0] 
-                text-white 
-                py-4 
-                rounded-full 
-                font-bold 
-                text-xl 
-                shadow-[0_10px_30px_rgba(0,0,0,0.4)] 
-                hover:bg-[#1346ff] 
-                transition 
-                underline 
-                decoration-[#2D4DFF]
-            "
+            <form
+                onSubmit={handleSubmit}
+                className="
+                    w-full 
+                    max-w-3xl 
+                    flex 
+                    flex-col 
+                    gap-10 
+                    bg-white/10 
+                    backdrop-blur-xl 
+                    rounded-3xl 
+                    p-10 
+                    shadow-[0_0_80px_#0A1B70] 
+                    border border-white/10
+                "
             >
-            Create Account
-            </button>
-        </form>
+                <AccountInfo
+                    email={email} setEmail={setEmail}
+                    password={password} setPassword={setPassword}
+                    confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
+                    passwordError={passwordError}
+                    backendEmailError={backendEmailError}
+                    emailFormatError={emailFormatError}
+                    setEmailFormatError={setEmailFormatError}
+                    setBackendEmailError={setBackendEmailError}
+                />
+                <BasicInfo
+                    firstName={firstName} setFirstName={setFirstName}
+                    lastName={lastName} setLastName={setLastName}
+                    bio={bio} setBio={setBio}
+                />
+                {content}
+                <button
+                    type="submit"
+                    className="
+                        mt-2 
+                        bg-[#0A39E0] 
+                        text-white 
+                        py-4 
+                        rounded-full 
+                        font-bold 
+                        text-xl 
+                        shadow-[0_10px_30px_rgba(0,0,0,0.4)] 
+                        hover:bg-[#1346ff] 
+                        transition 
+                        underline 
+                        decoration-[#2D4DFF]
+                    "
+                >
+                    Create Account
+                </button>
+            </form>
         </div>
     );
-    }
-        
+}

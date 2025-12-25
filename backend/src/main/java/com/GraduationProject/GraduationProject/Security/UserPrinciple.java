@@ -15,6 +15,11 @@ public class UserPrinciple implements UserDetails {
         this.users = users;
     }
 
+    public Long getId() {
+        return users.getId();
+    }
+
+
     public Collection<? extends GrantedAuthority> getAuthorities() {
          return List.of(() -> "ROLE_" + users.getRole());
     }

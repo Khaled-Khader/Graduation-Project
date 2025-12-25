@@ -4,10 +4,16 @@
 
     export function AuthProvider({ children }) {
     const { data, isLoading, isError } = useQuery({
-        queryKey: ["user"],
-        queryFn: CheckIfTokenValidOrExist,   
-        staleTime: 1000 * 60 * 5,            
-    });
+    queryKey: ["user"],
+    queryFn: CheckIfTokenValidOrExist,
+    staleTime: Infinity,           
+    cacheTime: Infinity,           
+    refetchOnMount: false,         
+    refetchOnWindowFocus: false,   
+    retry: false,
+    enabled:true
+});
+
 
     const value = {
         user: data ?? null,

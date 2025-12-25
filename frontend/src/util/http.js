@@ -20,6 +20,21 @@ export async function CheckIfTokenValidOrExist() {
     return userData; 
 }
 
+export async function FetchPets() {
+    
+    const response=await fetch(`http://localhost:8080/pet`,{
+        method:"GET",
+        credentials:"include"
+    })
+
+    if(!response.ok){
+        throw new Error("Failed to fetch")
+    }
+
+    const userData=await response.json()
+    return userData
+}
+
 export async function LoginFetchData({ email, password }) {
     const response = await fetch("http://localhost:8080/users/login", {
         method: "POST",
@@ -42,5 +57,7 @@ export async function LogoutFetchData(){
         credentials:"include",
         method:"POST"
     })
+
+    
     return response
 }

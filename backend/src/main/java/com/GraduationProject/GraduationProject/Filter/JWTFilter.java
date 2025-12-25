@@ -31,6 +31,7 @@ public class JWTFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
 
+        SecurityContextHolder.clearContext();
 
         String path = request.getServletPath();
         if (path.equals("/users/login") || path.equals("/users/register") ) {
@@ -64,11 +65,12 @@ public class JWTFilter extends OncePerRequestFilter {
     private String extractTokenFromCookies(HttpServletRequest request) {
         if (request.getCookies() == null) return null;
 
+        String token = null;
         for (Cookie cookie : request.getCookies()) {
             if (cookie.getName().equals("authToken")) {
-                return cookie.getValue();
+                token= cookie.getValue();
             }
         }
-        return null;
+        return token;
     }
 }

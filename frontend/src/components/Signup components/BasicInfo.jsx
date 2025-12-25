@@ -12,6 +12,7 @@
                 First Name
             </label>
             <input
+                required
                 type="text"
                 name="firstName"
                 className="input-style"
@@ -24,6 +25,7 @@
                 Last Name
             </label>
             <input
+                required
                 type="text"
                 name="lastName"
                 className="input-style"

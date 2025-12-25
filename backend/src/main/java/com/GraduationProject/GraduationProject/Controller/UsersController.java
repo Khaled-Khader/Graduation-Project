@@ -5,17 +5,20 @@ import com.GraduationProject.GraduationProject.DTO.UserLoginDTO;
 import com.GraduationProject.GraduationProject.DTO.UserResponseDTO;
 import com.GraduationProject.GraduationProject.DTO.UsersRegisterDTO;
 import com.GraduationProject.GraduationProject.Entity.Users;
+import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
 import com.GraduationProject.GraduationProject.Service.JWTService;
 import com.GraduationProject.GraduationProject.Service.UsersService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -30,58 +33,61 @@ public class UsersController {
     }
 
     @PostMapping("/register")
-    public void registerUser(@RequestBody UsersRegisterDTO usersRegisterDTO) {
-        usersService.addUser(usersRegisterDTO);
+    public ResponseEntity<?> registerUser(@RequestBody UsersRegisterDTO usersRegisterDTO) {
+        try {
+            // 1. Create user & generate JWT
+            LoginResult loginResult = usersService.addUser(usersRegisterDTO);
+
+            // 2. Set cookie + return safe JSON (id, email, role)
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE,
+                            authCookie(loginResult.jwt(), 60 * 60 * 24).toString())
+                    .body(loginResult.userResponseDTO()); // only safe data
+        } catch (EmailAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Registration failed"));
+        }
     }
+
+
+
+    private ResponseCookie authCookie(String value, long maxAge) {
+        return ResponseCookie.from("authToken", value)
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .sameSite("Strict")
+                .maxAge(maxAge)
+                .build();
+    }
+
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody UserLoginDTO userLoginDTO) {
 
-
-
-       LoginResult loginResult = usersService.verify(userLoginDTO);
-
+        LoginResult loginResult = usersService.verify(userLoginDTO);
         if (loginResult == null) {
-            ResponseCookie deleteCookie = ResponseCookie.from("authToken", "")
-                    .httpOnly(true)
-                    .secure(false)
-                    .path("/")
-                    .maxAge(0)
-                    .sameSite("Strict")
-                    .build();
-
             return ResponseEntity.status(401)
-                    .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
-                    .body("Invalid email or password");
+                    .header(HttpHeaders.SET_COOKIE, authCookie("", 0).toString())
+                    .body("Invalid credentials");
         }
 
-
-        ResponseCookie cookie = ResponseCookie.from("authToken", loginResult.jwt())
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(60 * 60 * 24) // 1 day
-                .sameSite("Strict")
-                .build();
-
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE,
+                        authCookie(loginResult.jwt(), 60 * 60 * 24).toString())
                 .body(loginResult.userResponseDTO());
     }
 
-    @PostMapping("logout")
-    public ResponseEntity<?> logoutUser(HttpServletResponse response) {
-        Cookie cookie = new Cookie("authToken", "");
-
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-
-        response.addCookie(cookie);
-
-        return ResponseEntity.ok("Logged out");
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser() {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, authCookie("", 0).toString())
+                .body("Logged out");
     }
+
 
     @GetMapping("/auth")
     public ResponseEntity<?> currentUser(@CookieValue(name = "authToken", required = false) String token) {

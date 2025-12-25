@@ -1,46 +1,44 @@
-import PostsPageComponent from "../components/PostsPageComponent";
-import { useAuth } from "../Auth/AuthHook";
-import { useQueryClient } from "@tanstack/react-query";
-import { LogoutFetchData } from "../util/http";
-import { useNavigate } from "react-router-dom";
-import Post from "../components/Post";
-export default function PostsPage() {
+    import { useState } from "react";
+    import PostsHeader from "../components/posts/PostsHeader";
+    import PostsFeed from "../components/posts/PostsFeed";
+    import CreateChooserDialog from "../components/posts/dialogs/CreateChooserDialog";
+    import CreatePostDialog from "../components/posts/dialogs/CreatePostDialog";
+    import CreateAdoptionDialog from "../components/posts/dialogs/CreateAdoptionDialog";
 
-    const { user, isLoading } = useAuth();
-    const queryClient = useQueryClient();
-    const navigate=useNavigate()
+    export default function PostsPage() {
+    const [openChooser, setOpenChooser] = useState(false);
+    const [openPost, setOpenPost] = useState(false);
+    const [openAdoption, setOpenAdoption] = useState(false);
 
-    if (isLoading) {
-        return <h1>Loading...</h1>
+    function handleCreate(type) {
+        setOpenChooser(false);
+        if (type === "post") setOpenPost(true);
+        if (type === "adoption") setOpenAdoption(true);
     }
-
-    if (!user) {
-        return <h1>No user logged in</h1>;
-    }
-
-    
-
-async function handleLogout() {
-    await LogoutFetchData();
-
-    
-    queryClient.invalidateQueries(["user"]);
-
-    
-    queryClient.setQueryData(["user"], null);
-
-    
-    navigate("/");
-}
 
     return (
-        <>
-            <Post />
-            <Post />
-            <Post />
-            <Post />
-            <Post />
-            <Post />
-        </>
+        <div className="w-full min-h-screen bg-[#0A0F29] text-white">
+        <div className="max-w-[900px] mx-auto px-4 pb-24">
+            <PostsHeader onCreate={() => setOpenChooser(true)} />
+            <PostsFeed />
+
+            {/* dialogs */}
+            <CreateChooserDialog
+            open={openChooser}
+            onClose={() => setOpenChooser(false)}
+            onSelect={handleCreate}
+            />
+
+            <CreatePostDialog
+            open={openPost}
+            onClose={() => setOpenPost(false)}
+            />
+
+            <CreateAdoptionDialog
+            open={openAdoption}
+            onClose={() => setOpenAdoption(false)}
+            />
+        </div>
+        </div>
     );
-}
+    }

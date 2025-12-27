@@ -51,7 +51,12 @@ public class Users {
     )
     private List<Pet> pets = new ArrayList<>();
 
-
+    @OneToMany(
+            mappedBy = "user",
+            orphanRemoval = true,
+            cascade = CascadeType.ALL
+    )
+    private List<Service> services = new ArrayList<>();
 
 
     public Users( String email, String passwordHash, EnumRole role) {
@@ -59,5 +64,12 @@ public class Users {
         this.passwordHash = passwordHash;
         this.role = role;
     }
+
+    public void addService(Service service) {
+        this.services.add(service);
+        service.setUser(this);
+    }
+
+
 
 }

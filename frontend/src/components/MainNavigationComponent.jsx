@@ -1,8 +1,9 @@
     import { NavLink, useNavigate } from "react-router-dom";
     import { LogoutFetchData } from "../util/http";
     import { useMutation,useQueryClient } from "@tanstack/react-query";
-
+    import { useAuth } from "../Auth/AuthHook";
     export default function MainNavigation() {
+    const {user}=useAuth()
     const navigate = useNavigate();
     const queryClient=useQueryClient()
     const base =
@@ -128,7 +129,7 @@
             </NavLink>
 
             <NavLink
-                to="/app/profile"
+                to={`/app/profile/${user.id}`}
                 className={({ isActive }) =>
                 `${base} ${isActive ? active : inactive}`
                 }

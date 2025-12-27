@@ -1,4 +1,11 @@
-    export default function BasicInfo() {
+    export default function BasicInfo({
+        firstName,
+        setFirstName,
+        lastName,
+        setLastName,
+        bio,
+        setBio
+    }) {
     return (
         <div className="bg-[#D6DAE3]/80 rounded-2xl p-6 shadow-[0_0_50px_#0A1B70]">
         <h2 className="text-2xl font-bold text-[#0A1B70] mb-4">
@@ -13,10 +20,13 @@
             </label>
             <input
                 required
+                maxLength={20}
                 type="text"
+                value={firstName}
                 name="firstName"
                 className="input-style"
                 placeholder="Enter first name"
+                onChange={(e)=>setFirstName(e.target.value)}
             />
             </div>
 
@@ -26,10 +36,13 @@
             </label>
             <input
                 required
+                maxLength={20}
                 type="text"
                 name="lastName"
+                value={lastName}
                 className="input-style"
                 placeholder="Enter last name"
+                onChange={(e)=>setLastName(e.target.value)}
             />
             </div>
 
@@ -52,8 +65,11 @@
             </label>
             <textarea
                 name="bio"
+                maxLength={50}
                 className="input-style h-28"
+                value={bio}
                 placeholder="Write a short bio"
+                onChange={(e)=>setBio(e.target.value)}
             ></textarea>
             </div>
 

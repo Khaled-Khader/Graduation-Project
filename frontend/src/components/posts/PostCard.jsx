@@ -1,6 +1,7 @@
   // components/posts/PostCard.jsx
   import { useState } from "react";
   import CommentsDialog from "./dialogs/CommentsDialog";
+import { Link } from "react-router-dom";
 
   export default function PostCard() {
     const [open, setOpen] = useState(false);
@@ -29,9 +30,12 @@
               src="/1.png"
               className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover"
             />
-            <span className="font-semibold text-base sm:text-lg">
-              Khaled Khader
-            </span>
+            <Link to={`/app/profile/${2}`}>
+              <span className="font-semibold text-base sm:text-lg">
+                Khaled Khader
+              </span>
+            </Link>
+            
           </div>
 
           {/* TEXT */}

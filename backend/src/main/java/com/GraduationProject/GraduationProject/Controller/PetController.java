@@ -30,8 +30,8 @@ public class PetController {
     }
 
 
-    @GetMapping
-    public List<PetDTO> getPetByUserId(){
-        return petService.getPetsByUserId();
+    @GetMapping("{userId}")
+    public List<PetDTO> getPetByUserId(@PathVariable Long userId){
+        return petService.getPetsByUserId(userId);
     }
 }

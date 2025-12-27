@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 @Data
 @NoArgsConstructor
@@ -25,10 +28,8 @@ public class Vet {
     @Column(name = "specialty")
     private String specialty;
 
-
     public Vet(String specialty) {
         this.specialty = specialty;
     }
-
 
 }

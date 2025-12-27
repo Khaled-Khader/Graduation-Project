@@ -54,6 +54,7 @@ public class SecurityConfig {
                                        .requestMatchers("/admin/**").hasRole("ADMIN")
                                        .requestMatchers("/owner/**").hasRole("OWNER")
                                        .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET","OWNER")
+                                       .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET","OWNER")
                                .anyRequest().authenticated())
                        //make the system stateless
                        .sessionManagement(sessionManagement ->

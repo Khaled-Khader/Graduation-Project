@@ -20,9 +20,9 @@ export async function CheckIfTokenValidOrExist() {
     return userData; 
 }
 
-export async function FetchPets() {
+export async function FetchPets(userId) {
     
-    const response=await fetch(`http://localhost:8080/pet`,{
+    const response=await fetch(`http://localhost:8080/pet/${userId}`,{
         method:"GET",
         credentials:"include"
     })
@@ -61,3 +61,22 @@ export async function LogoutFetchData(){
     
     return response
 }
+
+export async function addPet(data) {
+    return fetch("http://localhost:8080/pet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+    });
+}
+
+export async function addService(data) {
+    return fetch("http://localhost:8080/service", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+    });
+}
+

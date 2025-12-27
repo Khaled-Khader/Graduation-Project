@@ -40,7 +40,7 @@ export default function SignUpPage() {
 
     // Role-based content
     let content;
-    if (roleId === "1") content = <OwnerSignupPageComponent />;
+    if (roleId === "1") content = null;
     else if (roleId === "2")
         content = <VetSignupPageComponent specialty={specialty} setSpecialty={setSpecialty} />;
     else if (roleId === "3")

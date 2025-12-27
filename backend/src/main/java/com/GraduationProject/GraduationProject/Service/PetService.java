@@ -52,16 +52,9 @@ public class PetService {
         return "Pet added successfully";
     }
 
-    public List<PetDTO> getPetsByUserId() {
+    public List<PetDTO> getPetsByUserId(Long userId) {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
-
-        Users user= userRepository.findById(userPrinciple.getId()).orElseThrow(
-                ()-> new RuntimeException("User does not exist")
-        );
-
-        List<Pet> pets = petRepository.findByUserId(user.getId());
+        List<Pet> pets = petRepository.findByUserId(userId);
         List<PetDTO>petDTOS = new ArrayList<>();
 
         for (Pet pet : pets) {

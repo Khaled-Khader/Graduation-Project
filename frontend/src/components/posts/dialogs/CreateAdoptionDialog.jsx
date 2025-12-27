@@ -12,7 +12,7 @@
     console.log(user.id)
     const { data = [] } = useQuery({
     queryKey: ["pets", user?.id],
-    queryFn: FetchPets,
+    queryFn: ()=>FetchPets(user.id),
     enabled: open,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

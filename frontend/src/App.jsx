@@ -50,7 +50,7 @@ export default function App(){
           { index: true, element: <PostsPage /> },
           { path: "map", element: <MapPage /> },
           { path: "chat", element: <ChatPage /> },
-          { path: "profile", element: <ProfilePage /> },
+          { path: "profile/:userId", element: <ProfilePage /> },
         ]
 
       },

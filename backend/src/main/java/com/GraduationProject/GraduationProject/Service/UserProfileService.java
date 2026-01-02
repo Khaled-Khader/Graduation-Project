@@ -4,7 +4,11 @@ import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
+import com.GraduationProject.GraduationProject.Security.UserPrinciple;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 
@@ -63,6 +67,8 @@ public class UserProfileService {
         // Services
         List<ServiceDTO> services = user.getServices().stream()
                 .map(s -> new ServiceDTO(
+                        s.getId(),
+                        s.getUser().getId(),
                         s.getName(),
                         s.getDescription()
                 ))
@@ -80,6 +86,98 @@ public class UserProfileService {
                 pets,
                 services
         );
+    }
+
+    private boolean isValidText(JsonNode node) {
+        return node != null && !node.isNull() && node.isTextual() && !node.asText().isEmpty();
+    }
+
+    private boolean isValidNumber(JsonNode node) {
+        return node != null
+                && !node.isNull()
+                && node.isNumber()
+                && !Double.isNaN(node.asDouble());
+    }
+
+
+
+    public void editUserProfile(JsonNode  node) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
+
+        Users user =usersRepository.findById(userPrinciple.getId()).orElseThrow(
+                () -> new RuntimeException("User not found")
+        );
+
+        if(node.has("firstName")){
+            JsonNode firstNameNode = node.get("firstName");
+            if(isValidText(firstNameNode)) {
+                user.getUserInfo().setFirstName(firstNameNode.asText());
+            }
+        }
+
+        if(node.has("lastName")){
+            JsonNode lastNameNode = node.get("lastName");
+            if(isValidText(lastNameNode)) {
+                user.getUserInfo().setLastName(lastNameNode.asText());
+            }
+        }
+
+        if(node.has("bio")){
+            JsonNode bioNode = node.get("bio");
+            if(isValidText(bioNode)) {
+                user.getUserInfo().setBio(bioNode.asText());
+            }
+        }
+
+        if(node.has("photoUrl")){
+            JsonNode photoUrlNode = node.get("photoUrl");
+            if(isValidText(photoUrlNode)) {
+                user.getUserInfo().setPhotoUrl(photoUrlNode.asText());
+            }
+        }
+
+        if(user.getRole().equals(EnumRole.VET) && user.getVet() != null) {
+            if(node.has("specialty")) {
+                JsonNode specialtyNode = node.get("specialty");
+                if(isValidText(specialtyNode)) {
+                    user.getVet().setSpecialty(specialtyNode.asText());
+                }
+            }
+        }
+
+        if(user.getRole().equals(EnumRole.CLINIC) && user.getClinic() != null) {
+            if(node.has("latitude")){
+                JsonNode latitudeNode = node.get("latitude");
+                if(isValidNumber(latitudeNode)) {
+                    user.getClinic().setLatitude(latitudeNode.asDouble());
+                }
+            }
+
+            if(node.has("longitude")){
+                JsonNode longitudeNode = node.get("longitude");
+                if(isValidNumber(longitudeNode)) {
+                    user.getClinic().setLongitude(longitudeNode.asDouble());
+                }
+            }
+
+            if(node.has("address")){
+                JsonNode addressNode = node.get("address");
+                if(isValidText(addressNode)) {
+                    user.getClinic().setAddress(addressNode.asText());
+                }
+            }
+
+            if(node.has("city")){
+                JsonNode cityNode = node.get("city");
+                if(isValidText(cityNode)) {
+                    user.getClinic().setCity(cityNode.asText());
+                }
+            }
+        }
+
+        usersRepository.save(user);
     }
 }
 

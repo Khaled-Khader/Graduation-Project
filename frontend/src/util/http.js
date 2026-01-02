@@ -1,8 +1,9 @@
 
+const BASE_URL = "http://localhost:8080";
 
 
 export async function CheckIfTokenValidOrExist() {
-    const response = await fetch("http://localhost:8080/users/auth", {
+    const response = await fetch(`${BASE_URL}/users/auth`, {
         method: "GET",
         credentials: "include",
         cache: "no-store",
@@ -22,7 +23,7 @@ export async function CheckIfTokenValidOrExist() {
 
 export async function FetchPets(userId) {
     
-    const response=await fetch(`http://localhost:8080/pet/${userId}`,{
+    const response=await fetch(`${BASE_URL}/pet/${userId}`,{
         method:"GET",
         credentials:"include"
     })
@@ -36,7 +37,7 @@ export async function FetchPets(userId) {
 }
 
 export async function LoginFetchData({ email, password }) {
-    const response = await fetch("http://localhost:8080/users/login", {
+    const response = await fetch(`${BASE_URL}/users/login`, {
         method: "POST",
         credentials: "include",
         cache: "no-store", 
@@ -53,7 +54,7 @@ export async function LoginFetchData({ email, password }) {
 }
 
 export async function LogoutFetchData(){
-    const response =await fetch("http://localhost:8080/users/logout",{
+    const response =await fetch(`${BASE_URL}/users/logout`,{
         credentials:"include",
         method:"POST"
     })
@@ -63,7 +64,7 @@ export async function LogoutFetchData(){
 }
 
 export async function addPet(data) {
-    return fetch("http://localhost:8080/pet", {
+    return fetch(`${BASE_URL}/pet`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -72,11 +73,62 @@ export async function addPet(data) {
 }
 
 export async function addService(data) {
-    return fetch("http://localhost:8080/service", {
+    return fetch(`${BASE_URL}/service`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         credentials: "include",
     });
 }
+
+
+export async function deletePet(petId) {
+    const res = await fetch(`${BASE_URL}/pet/${petId}`, {
+        method: "DELETE",
+        credentials: "include", 
+        headers: {
+        "Content-Type": "application/json",
+        },
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to delete pet");
+    }
+
+    return true;
+}
+
+// services/http.js
+
+
+
+export async function deleteService(serviceId) {
+    const res = await fetch(`${BASE_URL}/service/${serviceId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+        "Content-Type": "application/json",
+        },
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "Failed to delete service");
+    }
+
+    return true;
+}
+
+export async function patchProfile(data) {
+    const res = await fetch(`${BASE_URL}/user-profile`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error("Failed to update profile");
+    return res.json();
+}
+
 

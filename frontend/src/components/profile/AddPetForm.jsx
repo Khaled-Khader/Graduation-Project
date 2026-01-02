@@ -3,7 +3,7 @@
     import { addPet } from "../../util/http";
     import { uploadImageToCloudinary } from "../../util/cloudinary";
 
-    export default function AddPetForm({ onClose }) {
+    export default function AddPetForm({ onClose,userId }) {
     const queryClient = useQueryClient();
 
     const [form, setForm] = useState({
@@ -20,7 +20,10 @@
     const { mutate, isPending } = useMutation({
         mutationFn: addPet,
         onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        queryClient.invalidateQueries({
+            queryKey: ["user-profile",userId],
+            });
+        queryClient.invalidateQueries(["pets"]);
         onClose();
         },
     });
@@ -77,6 +80,7 @@
             onChange={(e) => setForm({ ...form, age: e.target.value })}
             className="w-full rounded-xl bg-white/10 px-4 py-2"
             required
+            min={0}
             />
 
             {/* IMAGE INPUT */}

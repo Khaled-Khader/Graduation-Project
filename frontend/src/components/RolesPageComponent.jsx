@@ -6,17 +6,17 @@ import { Link } from "react-router-dom";
             {
                 id:1,
                 label: "Animal Owner",
-                img: "/6.png",
+                img: "https://res.cloudinary.com/di1xpud7d/image/upload/v1767196037/6_aekvel.png",
             },
             {
                 id:2,
                 label: "Veterinarian (Vet)",
-                img: "/7.png",
+                img: "https://res.cloudinary.com/di1xpud7d/image/upload/v1767196045/7_a1o66k.png",
             },
             {
                 id:3,
                 label: "Veterinary Clinic (Clinic)",
-                img: "/8.png",
+                img: "https://res.cloudinary.com/di1xpud7d/image/upload/v1767196056/8_svecyt.png",
             }
         ]
 

@@ -56,6 +56,8 @@ public class ServiceService {
         return serviceRepository.findByUser_Id(userId)
                 .stream()
                 .map(service -> new ServiceDTO(
+                        service.getId(),
+                        service.getUser().getId(),
                         service.getName(),
                         service.getDescription()
                 ))

@@ -13,6 +13,7 @@ import ProfilePage from "./pages/ProfilePage"
 
 import { QueryClient,QueryClientProvider } from "@tanstack/react-query"
 
+import ProtectedRoleRouter from "./Auth/ProtectedRoleRouter"
 import ProtectedRouter from "./Auth/ProtectedRouter"
 import { AuthProvider } from "./Auth/AuthProvider"
 import PublicRouter from "./Auth/PublicRouter"
@@ -36,7 +37,11 @@ export default function App(){
 
 
       {path:"/roles",element:<RolesPage/>},
-      {path:"/sign-up/:roleId",element:<SignupPage/>},
+      {path:"/sign-up/:roleId",element:
+      <ProtectedRoleRouter>
+        <SignupPage/>
+      </ProtectedRoleRouter>
+      },
 
 
       {

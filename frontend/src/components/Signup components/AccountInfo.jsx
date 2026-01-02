@@ -6,10 +6,11 @@ export default function AccountInfo({
     confirmPassword,
     setConfirmPassword,
     passwordError,
+    passwordLengthError,
     backendEmailError,
     setBackendEmailError,
-    emailFormatError, // new
-    setEmailFormatError, // new
+    emailFormatError,
+    setEmailFormatError,
 }) {
     return (
         <div className="bg-[#D6DAE3]/80 rounded-2xl p-6 shadow-[0_0_50px_#0A1B70]">
@@ -53,6 +54,9 @@ export default function AccountInfo({
                         className="input-style"
                         placeholder="Enter a password"
                     />
+                    {passwordLengthError && (
+                        <span className="text-red-600 text-sm mt-1">{passwordLengthError}</span>
+                    )}
                 </div>
 
                 {/* Confirm Password */}
@@ -74,5 +78,5 @@ export default function AccountInfo({
                 </div>
             </div>
         </div>
-    );
+    ); 
 }

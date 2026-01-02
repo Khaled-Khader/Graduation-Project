@@ -1,4 +1,4 @@
-    import { NavLink, useNavigate } from "react-router-dom";
+    import { Link, NavLink, useNavigate } from "react-router-dom";
     import { LogoutFetchData } from "../util/http";
     import { useMutation,useQueryClient } from "@tanstack/react-query";
     import { useAuth } from "../Auth/AuthHook";
@@ -66,19 +66,22 @@
             "
         >
             {/* LEFT — LOGO */}
-            <div className="flex items-center gap-2 shrink-0">
-            <img
-                src="/logo.png"
-                alt="PetNexus"
-                className="w-9 h-9 sm:w-10 sm:h-10 object-contain"
-            />
-            <span
-                className="text-lg sm:text-xl font-extrabold tracking-wide"
-                style={{ fontFamily: "'Orbitron', sans-serif" }}
-            >
-                PetNexus
-            </span>
-            </div>
+            <Link to="/app">
+                <div className="flex items-center gap-2 shrink-0">
+                <img
+                    src="https://res.cloudinary.com/di1xpud7d/image/upload/v1767196413/logo_ldoeab.png"
+                    alt="PetNexus"
+                    className="w-9 h-9 sm:w-10 sm:h-10 object-contain"
+                />
+                <span
+                    className="text-lg sm:text-xl font-extrabold tracking-wide"
+                    style={{ fontFamily: "'Orbitron', sans-serif" }}
+                >
+                    PetNexus
+                </span>
+                </div>
+            </Link>
+            
 
             {/* CENTER — SEARCH BAR (DESKTOP) */}
             <div className="hidden md:flex flex-1 justify-center px-6">

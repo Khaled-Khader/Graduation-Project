@@ -18,6 +18,4 @@ public class RegularPostService {
         this.usersRepository = usersRepository;
     }
 
-
-
 }

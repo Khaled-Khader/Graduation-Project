@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useState } from "react";
 import { useRegister } from "../hooks/RegisterHook";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,13 +14,14 @@ export default function SignUpPage() {
     const { roleId } = useParams();
     const navigate = useNavigate();
     const register = useRegister();
-    const queryClient=useQueryClient()
+    const queryClient = useQueryClient();
 
     // Account Info
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [passwordError, setPasswordError] = useState("");
+    const [passwordLengthError, setPasswordLengthError] = useState("");
     const [backendEmailError, setBackendEmailError] = useState("");
     const [emailFormatError, setEmailFormatError] = useState("");
 
@@ -28,6 +29,8 @@ export default function SignUpPage() {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [bio, setBio] = useState("");
+    const [firstNameError, setFirstNameError] = useState("");
+    const [lastNameError, setLastNameError] = useState("");
 
     // Vet Info
     const [specialty, setSpecialty] = useState("");
@@ -59,24 +62,41 @@ export default function SignUpPage() {
         return gmailRegex.test(email);
     }
 
+    // Name validation regex (single word, letters only)
+    const singleWordRegex = /^[A-Za-z]{2,30}$/;
+
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // First name validation
+        if (!singleWordRegex.test(firstName)) {
+            setFirstNameError("First name must be a single word, 2-30 letters only");
+            return;
+        } else setFirstNameError("");
+
+        // Last name validation
+        if (!singleWordRegex.test(lastName)) {
+            setLastNameError("Last name must be a single word, 2-30 letters only");
+            return;
+        } else setLastNameError("");
+
+        // Password length validation
+        if (password.length < 8) {
+            setPasswordLengthError("Password must be at least 8 characters long");
+            return;
+        } else setPasswordLengthError("");
+
+        // Password match validation
+        if (password !== confirmPassword) {
+            setPasswordError("Passwords do not match");
+            return;
+        } else setPasswordError("");
 
         // Email format validation
         if (!validateEmail(email)) {
             setEmailFormatError("Invalid email format");
             return;
-        } else {
-            setEmailFormatError("");
-        }
-
-        // Password validation
-        if (password !== confirmPassword) {
-            setPasswordError("Passwords do not match");
-            return;
-        } else {
-            setPasswordError("");
-        }
+        } else setEmailFormatError("");
 
         // Construct DTO
         const dto = {
@@ -89,7 +109,7 @@ export default function SignUpPage() {
         };
 
         register.mutate(dto, {
-            onSuccess: async() => {
+            onSuccess: async () => {
                 await queryClient.invalidateQueries(["user"]);
                 navigate("/app");
             },
@@ -126,14 +146,15 @@ export default function SignUpPage() {
                     password={password} setPassword={setPassword}
                     confirmPassword={confirmPassword} setConfirmPassword={setConfirmPassword}
                     passwordError={passwordError}
+                    passwordLengthError={passwordLengthError}
                     backendEmailError={backendEmailError}
                     emailFormatError={emailFormatError}
                     setEmailFormatError={setEmailFormatError}
                     setBackendEmailError={setBackendEmailError}
                 />
                 <BasicInfo
-                    firstName={firstName} setFirstName={setFirstName}
-                    lastName={lastName} setLastName={setLastName}
+                    firstName={firstName} setFirstName={setFirstName} firstNameError={firstNameError}
+                    lastName={lastName} setLastName={setLastName} lastNameError={lastNameError}
                     bio={bio} setBio={setBio}
                 />
                 {content}
@@ -156,6 +177,12 @@ export default function SignUpPage() {
                 >
                     Create Account
                 </button>
+                <p className="text-center text-white">
+                    have an account?
+                    <Link to="/sign-in">
+                        <span className="ml-2 underline text-blue-400 hover:text-blue-300">Sign in</span>
+                    </Link>
+                </p>
             </form>
         </div>
     );

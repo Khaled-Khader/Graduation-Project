@@ -24,7 +24,7 @@ public class PetController {
         return petService.addPet(addPetDTO);
     }
 
-    @DeleteMapping
+    @DeleteMapping("{id}")
     public String deletePet(@PathVariable Long id){
         return petService.deletePet(id);
     }

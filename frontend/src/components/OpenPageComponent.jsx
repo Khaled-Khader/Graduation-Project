@@ -16,7 +16,7 @@ export default function OpenPageComponent(){
 
                     {/* LOGO */}
                 <img
-                    src="/logo.png"
+                    src="https://res.cloudinary.com/di1xpud7d/image/upload/v1767196413/logo_ldoeab.png"
                     alt="logo"
                     className="
                     w-10 h-10          /* small screens */
@@ -85,7 +85,7 @@ export default function OpenPageComponent(){
             {/* Right Image */}
             <div className="mt-16 lg:mt-0">
                 <img
-                src="/1.png"
+                src="https://res.cloudinary.com/di1xpud7d/image/upload/v1767195952/1_jacwap.png"
                 alt="app"
                 className="
                     w-[280px] 
@@ -127,7 +127,7 @@ export default function OpenPageComponent(){
                 {/* Service 1 */}
                 <div className="flex flex-col items-center gap-6 md:gap-8">
                 <img
-                    src="/2.png"
+                    src="https://res.cloudinary.com/di1xpud7d/image/upload/v1767195991/2_qvmldx.png"
                     alt="Online"
                     className="w-[180px] sm:w-[200px] md:w-[220px] h-[180px] sm:h-[200px] md:h-[220px] rounded-2xl shadow-[0_0_70px_#3b82f690] object-cover"
                 />
@@ -140,7 +140,7 @@ export default function OpenPageComponent(){
                 {/* Service 2 */}
                 <div className="flex flex-col items-center gap-6 md:gap-8">
                 <img
-                    src="/3.png"
+                    src="https://res.cloudinary.com/di1xpud7d/image/upload/v1767195999/3_nrdoei.png"
                     alt="Booking"
                     className="w-[180px] sm:w-[200px] md:w-[220px] h-[180px] sm:h-[200px] md:h-[220px] rounded-2xl shadow-[0_0_70px_#3b82f690] object-cover"
                 />
@@ -153,7 +153,7 @@ export default function OpenPageComponent(){
                 {/* Service 3 */}
                 <div className="flex flex-col items-center gap-6 md:gap-8">
                 <img
-                    src="/4.png"
+                    src="https://res.cloudinary.com/di1xpud7d/image/upload/v1767196006/4_x14rnm.png"
                     alt="Finder"
                     className="w-[180px] sm:w-[200px] md:w-[220px] h-[180px] sm:h-[200px] md:h-[220px] rounded-2xl shadow-[0_0_70px_#3b82f690] object-cover"
                 />
@@ -166,7 +166,7 @@ export default function OpenPageComponent(){
                 {/* Service 4 */}
                 <div className="flex flex-col items-center gap-6 md:gap-8">
                 <img
-                    src="/5.png"
+                    src="https://res.cloudinary.com/di1xpud7d/image/upload/v1767196017/5_ogpdhy.png"
                     alt="Community"
                     className="w-[180px] sm:w-[200px] md:w-[220px] h-[180px] sm:h-[200px] md:h-[220px] rounded-2xl shadow-[0_0_70px_#3b82f690] object-cover"
                 />

@@ -2,10 +2,12 @@ package com.GraduationProject.GraduationProject.Controller;
 
 import com.GraduationProject.GraduationProject.DTO.ProfileDTO;
 import com.GraduationProject.GraduationProject.Service.UserProfileService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.JsonNode;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/user-profile")
@@ -22,4 +24,13 @@ public class UserProfileController {
         return userProfileService.getUserProfile(userId);
     }
 
+    @PatchMapping
+    public ResponseEntity<?> editProfile(@RequestBody JsonNode updates) {
+        try {
+            userProfileService.editUserProfile(updates);
+            return ResponseEntity.ok(Map.of("Message","Profile updated successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
 }

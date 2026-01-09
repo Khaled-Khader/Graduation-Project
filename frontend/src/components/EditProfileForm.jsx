@@ -9,6 +9,13 @@ export default function EditProfileForm({ onClose, profile }) {
     const queryClient = useQueryClient();
     const [uploading, setUploading] = useState(false);
 
+    // 🔹 validation regex (SAME as signup)
+    const singleWordRegex = /^[A-Za-z]{2,30}$/;
+
+    // 🔹 validation errors
+    const [firstNameError, setFirstNameError] = useState("");
+    const [lastNameError, setLastNameError] = useState("");
+
     const [form, setForm] = useState({
         firstName: profile.userInfoDTO?.firstName || "",
         lastName: profile.userInfoDTO?.lastName || "",
@@ -45,16 +52,49 @@ export default function EditProfileForm({ onClose, profile }) {
     }
 
     function handleRemoveImage() {
-        setForm((prev) => ({ ...prev, photoUrl: "" }));
+        let content = "";
+
+        if (user.role === "OWNER") {
+            content =
+                "https://res.cloudinary.com/di1xpud7d/image/upload/v1767881569/owner_qazol0.jpg";
+        } else if (user.role === "VET") {
+            content =
+                "https://res.cloudinary.com/di1xpud7d/image/upload/v1767881562/vet_k8pgey.jpg";
+        } else if (user.role === "CLINIC") {
+            content =
+                "https://res.cloudinary.com/di1xpud7d/image/upload/v1767881554/clinic_d2jav0.jpg";
+        }
+
+        setForm((prev) => ({ ...prev, photoUrl: content }));
     }
 
     function handleSubmit(e) {
         e.preventDefault();
+
+        // 🔹 FIRST NAME validation
+        if (!singleWordRegex.test(form.firstName)) {
+            setFirstNameError(
+                "First name must be a single word, 2–30 letters only"
+            );
+            return;
+        } else {
+            setFirstNameError("");
+        }
+
+        // 🔹 LAST NAME validation
+        if (!singleWordRegex.test(form.lastName)) {
+            setLastNameError(
+                "Last name must be a single word, 2–30 letters only"
+            );
+            return;
+        } else {
+            setLastNameError("");
+        }
+
         mutation.mutate(form);
     }
 
     return (
-        /* 🔹 SCROLLABLE + SCREEN SAFE */
         <div className="max-h-[85vh] overflow-y-auto px-1">
             <h2 className="text-2xl font-bold mb-6 text-center">
                 Edit Profile ✏️
@@ -63,34 +103,57 @@ export default function EditProfileForm({ onClose, profile }) {
             <form onSubmit={handleSubmit} className="space-y-4">
                 {/* FIRST / LAST NAME */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input
-                        placeholder="First Name"
-                        value={form.firstName}
-                        onChange={(e) =>
-                            setForm({ ...form, firstName: e.target.value })
-                        }
-                        className="rounded-xl bg-white/10 px-4 py-2 text-white"
-                        required
-                    />
+                    <div>
+                        <input
+                            placeholder="First Name"
+                            value={form.firstName}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    firstName: e.target.value,
+                                })
+                            }
+                            className="rounded-xl bg-white/10 px-4 py-2 text-white w-full"
+                            required
+                        />
+                        {firstNameError && (
+                            <p className="text-red-400 text-sm mt-1">
+                                {firstNameError}
+                            </p>
+                        )}
+                    </div>
 
-                    <input
-                        placeholder="Last Name"
-                        value={form.lastName}
-                        onChange={(e) =>
-                            setForm({ ...form, lastName: e.target.value })
-                        }
-                        className="rounded-xl bg-white/10 px-4 py-2 text-white"
-                        required
-                    />
+                    <div>
+                        <input
+                            placeholder="Last Name"
+                            value={form.lastName}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    lastName: e.target.value,
+                                })
+                            }
+                            className="rounded-xl bg-white/10 px-4 py-2 text-white w-full"
+                            required
+                        />
+                        {lastNameError && (
+                            <p className="text-red-400 text-sm mt-1">
+                                {lastNameError}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* BIO */}
                 <textarea
                     placeholder="Bio"
                     value={form.bio}
-                    onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                    onChange={(e) =>
+                        setForm({ ...form, bio: e.target.value })
+                    }
                     className="w-full rounded-xl bg-white/10 px-4 py-2 text-white"
                     rows={3}
+                    maxLength={50}
                 />
 
                 {/* IMAGE INPUT + REMOVE */}
@@ -133,7 +196,10 @@ export default function EditProfileForm({ onClose, profile }) {
                         placeholder="Specialty"
                         value={form.specialty}
                         onChange={(e) =>
-                            setForm({ ...form, specialty: e.target.value })
+                            setForm({
+                                ...form,
+                                specialty: e.target.value,
+                            })
                         }
                         className="w-full rounded-xl bg-white/10 px-4 py-2 text-white"
                     />
@@ -174,7 +240,10 @@ export default function EditProfileForm({ onClose, profile }) {
                             placeholder="City"
                             value={form.city}
                             onChange={(e) =>
-                                setForm({ ...form, city: e.target.value })
+                                setForm({
+                                    ...form,
+                                    city: e.target.value,
+                                })
                             }
                             className="w-full rounded-xl bg-white/10 px-4 py-2 text-white"
                         />
@@ -183,7 +252,10 @@ export default function EditProfileForm({ onClose, profile }) {
                             placeholder="Address"
                             value={form.address}
                             onChange={(e) =>
-                                setForm({ ...form, address: e.target.value })
+                                setForm({
+                                    ...form,
+                                    address: e.target.value,
+                                })
                             }
                             className="w-full rounded-xl bg-white/10 px-4 py-2 text-white"
                         />
@@ -204,11 +276,11 @@ export default function EditProfileForm({ onClose, profile }) {
                         type="submit"
                         disabled={mutation.isPending || uploading}
                         className="
-                                flex-1 bg-gradient-to-r from-[#4F7CFF] to-[#355CFF]
-                                py-3 rounded-xl font-semibold text-white
-                                hover:from-[#6A8CFF] hover:to-[#4A6BFF]
-                                hover: transition-all duration-200
-                                "
+                            flex-1 bg-gradient-to-r from-[#4F7CFF] to-[#355CFF]
+                            py-3 rounded-xl font-semibold text-white
+                            hover:from-[#6A8CFF] hover:to-[#4A6BFF]
+                            transition-all duration-200
+                        "
                     >
                         Save
                     </button>

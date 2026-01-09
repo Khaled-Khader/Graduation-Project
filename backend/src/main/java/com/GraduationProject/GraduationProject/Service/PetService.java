@@ -34,6 +34,7 @@ public class PetService {
                 addPetDTO.age(),
                 addPetDTO.photoUrl(),
                 addPetDTO.healthStatus(),
+                addPetDTO.gender(),
                 addPetDTO.hasVaccineCert()
         );
 
@@ -65,6 +66,7 @@ public class PetService {
                     pet.getAge(),
                     pet.getPhotoUrl(),
                     pet.getHealthStatus(),
+                    pet.getGender(),
                     pet.isHasVaccineCert()
             );
             petDTOS.add(petDTO);

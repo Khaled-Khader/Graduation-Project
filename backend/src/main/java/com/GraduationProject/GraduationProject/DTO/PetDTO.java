@@ -7,5 +7,6 @@ public record PetDTO(
                      Double age,
                      String photoUrl,
                      String healthStatus,
+                     String gender,
                      boolean hasVaccineCert) {
 }

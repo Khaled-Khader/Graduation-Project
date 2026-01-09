@@ -131,4 +131,188 @@ export async function patchProfile(data) {
     return res.json();
 }
 
+export async function http(url, options = {}) {
+    const response = await fetch(`${BASE_URL}${url}`, {
+        headers: {
+        "Content-Type": "application/json",
+        },
+        credentials: "include",
+        ...options,
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Request failed");
+    }
+
+    return response.json();
+}
+
+export async function createRegularPost({ content, imageUrl }) {
+    const response = await fetch(`${BASE_URL}/post/regular`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content, imageUrl }),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to create post");
+    }
+
+  return response.json(); // returns RegularPostDTO
+}
+
+export async function createAdoptionPost({ content, petId, city }) {
+    const response = await fetch(`${BASE_URL}/post/adoption`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content, petId, city }),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to create adoption post");
+    }
+
+  return response.json(); // returns AdoptionPostDTO
+}
+
+
+export async function fetchComments(postId, { pageParam = 0, size = 10 } = {}) {
+    const params = new URLSearchParams({
+        page: pageParam,
+        size,
+    });
+
+    const response = await fetch(`${BASE_URL}/comment/post/${postId}?${params.toString()}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to fetch comments");
+    }
+
+  return response.json(); // returns Page<CommentResponseDTO>
+}
+
+
+export async function addComment(postId, content) {
+    const response = await fetch(`${BASE_URL}/comment/post/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to add comment");
+    }
+
+    return true;
+}
+
+
+export async function createAdoptionRequest({ postId, phoneNumber, city, message }) {
+    const response = await fetch(`${BASE_URL}/adoption-requests/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ phoneNumber, city, message }),
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to send adoption request");
+    }
+}
+
+export async function cancelAdoptionPost(postId){
+    const response=await fetch(`${BASE_URL}/adoption-requests/post/${postId}/cancel` ,{
+        method:"PUT",
+        credentials:"include"
+    })
+    if(!response.ok){
+        const text=await response.text()
+        throw new Error(text || "Failed to cancel adoption")
+    }
+    return response
+}
+
+export async function FetchAdoptionPostsForuser() {
+    const response=await fetch(`${BASE_URL}/post/user/adoption`,{
+        method:"GET",
+        credentials:"include"
+    })
+
+    if(!response.ok){
+        const text= await response.text()
+        throw new Error(text || "Something went wrong")
+    }
+        const data=await response.json()
+        return data
+}
+
+export async function FetchRequsetOnAdoptionPost(
+    postId,
+    page = 0,
+    size = 10
+    ) {
+    const response = await fetch(
+        `${BASE_URL}/adoption-requests/post/${postId}?page=${page}&size=${size}`,
+        {
+        method: "GET",
+        credentials: "include",
+        }
+    );
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Something went wrong");
+    }
+
+    return response.json(); 
+}
+
+
+export async function AcceptRequsetForAdoptionPost(requsetId){
+    const response = await fetch(`${BASE_URL}/adoption-requests/${requsetId}/accept`,
+        {
+            method:"PUT",
+            credentials:"include"
+        }
+    )
+
+    if(!response.ok){
+        const text= await response.text()
+        throw new Error(text || "Failed to accept")
+    }
+
+    return true
+}
+
+export async function CompleteAdoptionPost(postId){
+
+    const response= await fetch(`${BASE_URL}/adoption-requests/post/${postId}/complete`,
+        {
+            method:"PUT",
+            credentials:"include"
+        }
+    )
+
+    if(!response.ok){
+        const text= await response.text()
+        throw new Error(text || "Failed to accept")
+    }
+
+    return true
+}
+
+
 

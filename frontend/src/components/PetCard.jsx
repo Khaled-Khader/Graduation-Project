@@ -1,5 +1,6 @@
     import { useState } from "react";
     import Dialog from "../components/posts/dialogs/Dialog";
+    import { formatAge } from "../util/AgeFormatter";
 
     export default function PetCard({ pet, onRemove, currentUserId }) {
     const [openConfirm, setOpenConfirm] = useState(false);
@@ -14,6 +15,13 @@
         setLoading(false);
         }
     }
+
+    const genderLabel =
+        pet.gender === "MALE"
+        ? "♂️ Male"
+        : pet.gender === "FEMALE"
+        ? "♀️ Female"
+        : null;
 
     return (
         <>
@@ -34,25 +42,40 @@
             <div>
             <img
                 src={pet.photoUrl || "/pet.png"}
+                alt={pet.name}
                 className="w-full h-40 object-cover rounded-xl mb-4"
             />
 
             <h3 className="text-xl font-bold text-[#E6ECFF]">{pet.name}</h3>
 
-            <p className="text-[#B8C4FF] text-sm mt-1">
-                {pet.species} • {pet.age} years
+            <p className="text-[#B8C4FF] text-sm mt-1 flex items-center gap-2">
+                <span>{pet.species}</span>
+                <span>•</span>
+                <span>{formatAge(Number(pet.age))}</span>
+                {genderLabel && (
+                <>
+                    <span>•</span>
+                    <span className="text-[#6B8CFF] font-medium">
+                    {genderLabel}
+                    </span>
+                </>
+                )}
             </p>
 
             <div className="mt-3 flex justify-between text-sm">
-                <span className="text-[#9AA6E8]">Health: {pet.healthStatus}</span>
+                <span className="text-[#9AA6E8]">
+                Health: {pet.healthStatus || "N/A"}
+                </span>
 
                 {pet.hasVaccineCert && (
-                <span className="text-[#6B8CFF] font-medium">💉 Vaccinated</span>
+                <span className="text-[#6B8CFF] font-medium">
+                    💉 Vaccinated
+                </span>
                 )}
             </div>
             </div>
 
-            {/* REMOVE BUTTON at the bottom */}
+            {/* REMOVE BUTTON */}
             {currentUserId && (
             <button
                 onClick={() => setOpenConfirm(true)}

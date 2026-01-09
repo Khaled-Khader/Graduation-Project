@@ -30,7 +30,8 @@ public class UserProfileService {
                 ? new UserInfoDTO(
                 user.getUserInfo().getFirstName(),
                 user.getUserInfo().getLastName(),
-                user.getUserInfo().getBio()
+                user.getUserInfo().getBio(),
+                user.getUserInfo().getPhotoUrl()
         )
                 : null;
 
@@ -60,6 +61,7 @@ public class UserProfileService {
                         p.getAge(),
                         p.getPhotoUrl(),
                         p.getHealthStatus(),
+                        p.getGender(),
                         p.isHasVaccineCert()
                 ))
                 .toList();

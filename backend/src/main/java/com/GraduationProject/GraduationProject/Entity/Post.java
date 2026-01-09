@@ -1,6 +1,5 @@
 package com.GraduationProject.GraduationProject.Entity;
 
-import com.GraduationProject.GraduationProject.Enum.EnumPostType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,14 +21,15 @@ public abstract class Post {
     @Setter
     @Getter
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id",nullable = false)
+    @JoinColumn(name = "owner_id",nullable = false)
     private Users user;
 
-    @Getter
-    @Enumerated(EnumType.STRING)
-    @Column(name = "post_type",insertable = false, updatable = false,nullable = false)
-    protected EnumPostType postType;
-
+    // @Getter
+//
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "post_type",insertable = false, updatable = false,nullable = false)
+//    protected EnumPostType postType;
+//no need
     @Getter
     @Setter
     @Column(columnDefinition = "TEXT" ,name = "content")

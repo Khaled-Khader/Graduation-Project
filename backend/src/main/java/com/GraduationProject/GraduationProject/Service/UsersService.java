@@ -59,6 +59,7 @@ public class UsersService {
         userInfo.setFirstName(usersRegisterDTO.userInfoDTO().firstName());
         userInfo.setLastName(usersRegisterDTO.userInfoDTO().lastName());
         userInfo.setBio(usersRegisterDTO.userInfoDTO().bio());
+        userInfo.setPhotoUrl(usersRegisterDTO.userInfoDTO().photoUrl());
         users.setUserInfo(userInfo);
 
         // Role-specific entities

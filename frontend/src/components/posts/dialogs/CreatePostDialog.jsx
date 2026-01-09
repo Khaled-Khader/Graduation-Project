@@ -1,26 +1,46 @@
     import { useState } from "react";
     import Dialog from "./Dialog";
+    import { useCreateRegularPost } from "../../../hooks/useCreateRegularPost";
+    import { uploadImageToCloudinary } from "../../../util/cloudinary";
 
     export default function CreatePostDialog({ open, onClose }) {
     const [text, setText] = useState("");
     const [image, setImage] = useState(null);
+    const [isUploading, setIsUploading] = useState(false);
 
-    function handleSubmit(e) {
-        e.preventDefault();
-
-        // later → react-query mutation
-        console.log({ text, image });
-
-        onClose();
+    const { mutate, isLoading } = useCreateRegularPost(() => {
+        // Reset dialog after success
         setText("");
         setImage(null);
+        onClose();
+    });
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+
+        let imageUrl = null;
+
+        if (image) {
+        try {
+            setIsUploading(true);
+            imageUrl = await uploadImageToCloudinary(image);
+        } catch (err) {
+            console.error("Cloudinary upload error:", err);
+            alert("Failed to upload image");
+            setIsUploading(false);
+            return;
+        } finally {
+            setIsUploading(false);
+        }
+        }
+
+        // Send content + uploaded image URL to backend
+        mutate({ content: text, imageUrl });
     }
 
     return (
         <Dialog open={open} onClose={onClose}>
-        <h2 className="text-2xl font-bold mb-5 text-center">
-            Create Post
-        </h2>
+        <h2 className="text-2xl font-bold mb-5 text-center">Create Post</h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* TEXT */}
@@ -48,15 +68,13 @@
                 hidden
                 onChange={(e) => setImage(e.target.files[0])}
             />
-            <div
-                className="
+            <div className="
                 w-full py-3 text-center
                 rounded-xl
                 bg-white/10
                 hover:bg-white/20
                 transition
-                "
-            >
+            ">
                 📷 Add Image
             </div>
             </label>
@@ -73,6 +91,7 @@
             {/* SUBMIT */}
             <button
             type="submit"
+            disabled={isLoading || isUploading}
             className="
                 mt-2 w-full py-3
                 rounded-xl
@@ -80,9 +99,14 @@
                 font-semibold
                 hover:bg-[#0f3dff]
                 transition
+                disabled:opacity-50
             "
             >
-            Post
+            {isUploading
+                ? "Uploading Image..."
+                : isLoading
+                ? "Posting..."
+                : "Post"}
             </button>
         </form>
         </Dialog>

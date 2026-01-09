@@ -40,28 +40,29 @@ public class SecurityConfig {
                                                    CorsConfigurationSource corsConfigurationSource
     ) throws Exception {
 
-       return
-               http
-                       //Disable CSRF Attack
-                .csrf(csrf -> csrf.disable())
-                       .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                       .authenticationProvider(authenticationProvider())
-                       .authorizeHttpRequests(authorizeRequests ->
-                               authorizeRequests.requestMatchers("/users/register","/users/login","/users/auth")
-                                               .permitAll()
-                                       .requestMatchers("/clinic/**").hasRole("CLINIC")
-                                       .requestMatchers("/vet/**").hasRole("VET")
-                                       .requestMatchers("/admin/**").hasRole("ADMIN")
-                                       .requestMatchers("/owner/**").hasRole("OWNER")
-                                       .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET","OWNER")
-                                       .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET","OWNER")
-                               .anyRequest().authenticated())
-                       //make the system stateless
-                       .sessionManagement(sessionManagement ->
-                               sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                       //add this filter to be before usernamepassword filter
-                       .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                       .build();
+        return
+                http
+                        //Disable CSRF Attack
+                        .csrf(csrf -> csrf.disable())
+                        .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                        .authenticationProvider(authenticationProvider())
+                        .authorizeHttpRequests(authorizeRequests ->
+                                authorizeRequests.requestMatchers("/users/register","/users/login","/users/auth")
+                                        .permitAll()
+                                        .requestMatchers("/clinic/**").hasRole("CLINIC")
+                                        .requestMatchers("/vet/**").hasRole("VET")
+                                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                                        .requestMatchers("/owner/**").hasRole("OWNER")
+                                        .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET","OWNER")
+                                        .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET","OWNER")
+                                        .requestMatchers("/post/**").hasAnyRole("CLINIC", "VET","OWNER")
+                                        .anyRequest().authenticated())
+                        //make the system stateless
+                        .sessionManagement(sessionManagement ->
+                                sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        //add this filter to be before usernamepassword filter
+                        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                        .build();
 
     }
 

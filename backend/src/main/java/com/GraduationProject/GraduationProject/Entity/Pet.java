@@ -29,6 +29,9 @@ public class Pet {
     @Column(name = "photo_url")
     private String photoUrl;
 
+    @Column(name = "gender")
+    private String gender;
+
     @Column(name = "health_status")
     private String healthStatus;
 
@@ -44,12 +47,14 @@ public class Pet {
                Double age,
                String photoUrl,
                String healthStatus,
+               String gender,
                boolean hasVaccineCert) {
         this.name = name;
         this.species = species;
         this.age = age;
         this.photoUrl = photoUrl;
         this.healthStatus = healthStatus;
+        this.gender = gender;
         this.hasVaccineCert = hasVaccineCert;
     }
 }

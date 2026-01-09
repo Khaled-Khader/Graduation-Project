@@ -3,12 +3,13 @@
     import { addPet } from "../../util/http";
     import { uploadImageToCloudinary } from "../../util/cloudinary";
 
-    export default function AddPetForm({ onClose,userId }) {
+    export default function AddPetForm({ onClose, userId }) {
     const queryClient = useQueryClient();
 
     const [form, setForm] = useState({
         name: "",
         species: "",
+        gender: "",
         age: "",
         photoUrl: "",
         healthStatus: "",
@@ -21,8 +22,8 @@
         mutationFn: addPet,
         onSuccess: () => {
         queryClient.invalidateQueries({
-            queryKey: ["user-profile",userId],
-            });
+            queryKey: ["user-profile", userId],
+        });
         queryClient.invalidateQueries(["pets"]);
         onClose();
         },
@@ -36,7 +37,7 @@
         try {
         const imageUrl = await uploadImageToCloudinary(file);
         setForm((prev) => ({ ...prev, photoUrl: imageUrl }));
-        } catch (err) {
+        } catch {
         alert("Image upload failed");
         } finally {
         setUploading(false);
@@ -73,9 +74,39 @@
             required
             />
 
+            {/* GENDER SELECT */}
+                <select
+                value={form.gender}
+                onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                className="
+                    w-full
+                    rounded-xl
+                    bg-white/10
+                    px-4 py-2
+                    text-white
+                    outline-none
+                    border border-transparent
+                    focus:border-[#6B8CFF]
+                    focus:shadow-[0_0_12px_#6B8CFF55]
+                    transition
+                "
+                required
+                >
+                <option value="" disabled className="bg-[#0F1538] text-white/60">
+                    Select Gender
+                </option>
+                <option value="MALE" className="bg-[#0F1538]">
+                    ♂️ Male
+                </option>
+                <option value="FEMALE" className="bg-[#0F1538]">
+                    ♀️ Female
+                </option>
+                </select>
+
+
             <input
             type="number"
-            placeholder="Age"
+            placeholder="Age in Months"
             value={form.age}
             onChange={(e) => setForm({ ...form, age: e.target.value })}
             className="w-full rounded-xl bg-white/10 px-4 py-2"

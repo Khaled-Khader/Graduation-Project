@@ -9,9 +9,11 @@
     const [openChooser, setOpenChooser] = useState(false);
     const [openPost, setOpenPost] = useState(false);
     const [openAdoption, setOpenAdoption] = useState(false);
+    const [filter, setFilter] = useState("all");
 
     function handleCreate(type) {
         setOpenChooser(false);
+
         if (type === "post") setOpenPost(true);
         if (type === "adoption") setOpenAdoption(true);
     }
@@ -19,8 +21,13 @@
     return (
         <div className="w-full min-h-screen bg-[#0A0F29] text-white">
         <div className="max-w-[900px] mx-auto px-4 pb-24">
-            <PostsHeader onCreate={() => setOpenChooser(true)} />
-            <PostsFeed />
+            <PostsHeader
+            filter={filter}
+            setFilter={setFilter}
+            onCreate={() => setOpenChooser(true)}
+            />
+
+            <PostsFeed filter={filter} />
 
             {/* dialogs */}
             <CreateChooserDialog

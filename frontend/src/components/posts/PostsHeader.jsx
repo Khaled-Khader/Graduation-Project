@@ -1,19 +1,12 @@
-    // components/posts/PostsHeader.jsx
-    import { useState } from "react";
-
-    export default function PostsHeader({onCreate}) {
-    const [filter, setFilter] = useState("all");
-
+    export default function PostsHeader({ filter, setFilter, onCreate }) {
     return (
         <div className="sticky top-16 z-40 bg-[#0A0F29]/90 backdrop-blur-md py-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 
-            {/* TITLE */}
-            <h2 className="text-2xl md:text-3xl font-extrabold">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white">
             Community
             </h2>
 
-            {/* FILTER TABS */}
             <div className="flex gap-2">
             {["all", "posts", "adoption"].map((type) => (
                 <button
@@ -33,17 +26,16 @@
             ))}
             </div>
 
-            {/* CREATE BUTTON */}
             <button
-                onClick={onCreate}
-                className="
-                    px-5 py-2 rounded-full
-                    bg-[#0A39E0]
-                    text-white font-semibold
-                    shadow-[0_0_20px_#0A39E0]
-                    hover:bg-[#0f3dff]
-                    transition
-                "
+            onClick={onCreate}
+            className="
+                px-5 py-2 rounded-full
+                bg-[#0A39E0]
+                text-white font-semibold
+                shadow-[0_0_20px_#0A39E0]
+                hover:bg-[#0f3dff]
+                transition
+            "
             >
             + Create
             </button>

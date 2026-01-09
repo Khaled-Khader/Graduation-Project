@@ -1,7 +1,5 @@
 package com.GraduationProject.GraduationProject.Service;
 
-import com.GraduationProject.GraduationProject.DTO.RegularPostDTO;
-import com.GraduationProject.GraduationProject.Entity.RegularPost;
 import com.GraduationProject.GraduationProject.Repository.RegularPostRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import org.springframework.stereotype.Service;

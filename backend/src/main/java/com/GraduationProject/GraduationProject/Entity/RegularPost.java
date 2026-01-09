@@ -25,14 +25,19 @@ public class RegularPost extends Post {
     )
     private List<Comment> comments = new ArrayList<>();
 
-    public RegularPost(Users user, String content, String imageUrl) {
-        this.setUser(user);
-        this.setContent(content);
-        this.setImageUrl(imageUrl);
-    }
+//    public RegularPost(Users user, String content, String imageUrl) {
+//        this.setUser(user);
+//        this.setContent(content);
+//        this.setImageUrl(imageUrl);\
+//    }no need
 
     public void addComment(Comment comment){
         this.comments.add(comment);
         comment.setPost(this);
+    }
+
+    public void removeComment(Comment comment) {
+        comments.remove(comment);
+        comment.setPost(null);
     }
 }

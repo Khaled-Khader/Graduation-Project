@@ -31,7 +31,6 @@ export default function SignUpPage() {
     const [bio, setBio] = useState("");
     const [firstNameError, setFirstNameError] = useState("");
     const [lastNameError, setLastNameError] = useState("");
-
     // Vet Info
     const [specialty, setSpecialty] = useState("");
 
@@ -43,11 +42,17 @@ export default function SignUpPage() {
 
     // Role-based content
     let content;
-    if (roleId === "1") content = null;
-    else if (roleId === "2")
+    let photoUrl=""
+    if (roleId === "1") {
+        content = null
+        photoUrl="https://res.cloudinary.com/di1xpud7d/image/upload/v1767881569/owner_qazol0.jpg"
+    }
+    else if (roleId === "2") {
         content = <VetSignupPageComponent specialty={specialty} setSpecialty={setSpecialty} />;
+        photoUrl="https://res.cloudinary.com/di1xpud7d/image/upload/v1767881562/vet_k8pgey.jpg"
+    }
     else if (roleId === "3")
-        content = (
+        {content = (
             <ClinicSignupPageComponent
                 latitude={latitude} setLatitude={setLatitude}
                 longitude={longitude} setLongitude={setLongitude}
@@ -55,6 +60,8 @@ export default function SignUpPage() {
                 address={address} setAddress={setAddress}
             />
         );
+        photoUrl="https://res.cloudinary.com/di1xpud7d/image/upload/v1767881554/clinic_d2jav0.jpg"
+    }
 
     // Email validation regex
     function validateEmail(email) {
@@ -103,7 +110,7 @@ export default function SignUpPage() {
             email,
             passwordHash: password,
             role: roleId === "1" ? "OWNER" : roleId === "2" ? "VET" : roleId === "3" ? "CLINIC" : null,
-            userInfoDTO: { firstName, lastName, bio },
+            userInfoDTO: { firstName, lastName, bio,photoUrl },
             vetDTO: roleId === "2" ? { specialty } : null,
             clinicDTO: roleId === "3" ? { latitude, longitude, city, address } : null,
         };

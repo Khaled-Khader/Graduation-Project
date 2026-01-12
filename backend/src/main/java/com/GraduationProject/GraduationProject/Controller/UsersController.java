@@ -119,9 +119,9 @@ public class UsersController {
     private ResponseCookie authCookie(String value, long maxAge) {
         return ResponseCookie.from("authToken", value)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
-                .sameSite("Strict")
+                .sameSite("none")
                 .maxAge(maxAge)
                 .build();
     }

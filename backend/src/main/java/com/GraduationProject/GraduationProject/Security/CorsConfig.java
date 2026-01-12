@@ -9,56 +9,55 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * Configuration class for Cross-Origin Resource Sharing (CORS).
+ * Global CORS configuration.
  *
- * This class defines a CORS policy to allow the frontend
- * applications (running on different origins) to communicate
- * securely with the backend API.
- *
- * Features:
- * - Allows credentials (cookies, authorization headers)
- * - Specifies allowed origins
- * - Defines permitted HTTP methods
- * - Sets allowed headers and exposed headers
- * - Configures maximum age for preflight requests
+ * Enables secure cross-origin requests between the frontend
+ * (React / Vite) and the backend (Spring Boot API),
+ * including support for HttpOnly cookies.
  */
 @Configuration
 public class CorsConfig {
 
-    /**
-     * Defines the CORS configuration source bean.
-     *
-     * This bean is automatically used by Spring Security
-     * to enforce the CORS policy on all endpoints.
-     *
-     * @return the configured CorsConfigurationSource
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow credentials such as cookies or HTTP authentication
+        // 🔐 Required for HttpOnly cookies (JWT)
         config.setAllowCredentials(true);
 
-        // Allowed origins (frontend URLs)
+        // 🌍 Allowed frontend origins
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://127.0.0.1:3000"
+                "http://localhost:5173",          // Local development
+                "https://pet-nexus.vercel.app"    // Production frontend
         ));
 
-        // Allowed HTTP methods
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        // 🔁 Allowed HTTP methods
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "OPTIONS"
+        ));
 
-        // Allowed request headers
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        // 📩 Allowed request headers
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "X-Requested-With",
+                "Accept"
+        ));
 
-        // Expose certain headers to the client
-        config.setExposedHeaders(List.of("Set-Cookie"));
+        // 📤 Exposed response headers
+        config.setExposedHeaders(List.of(
+                "Set-Cookie"
+        ));
 
-        // Max age for preflight requests (in seconds)
+        // ⏱ Cache preflight response for 1 hour
         config.setMaxAge(3600L);
 
-        // Apply this configuration to all endpoints
+        // 📌 Apply this CORS config to all endpoints
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
 

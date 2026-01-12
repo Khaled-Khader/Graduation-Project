@@ -21,6 +21,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service class for handling adoption requests in the Pet Nexus project.
+ *
+ * This class handles the main operations related to adoption posts:
+ * 1. Creating adoption requests
+ * 2. Viewing requests for a specific post (with pagination)
+ * 3. Accepting requests and updating post status
+ * 4. Completing adoptions
+ * 5. Canceling adoption posts
+ *
+ * All methods use the currently authenticated user for authorization checks.
+ */
 @Service
 @Transactional
 public class AdoptionRequestService {
@@ -28,6 +40,7 @@ public class AdoptionRequestService {
     private final AdoptionRequestRepository requestRepository;
     private final UsersRepository usersRepository;
     private final AdoptionPostRepository adoptionPostRepository;
+
     public AdoptionRequestService(
             AdoptionRequestRepository requestRepository,
             AdoptionPostRepository adoptionPostRepository,
@@ -38,13 +51,20 @@ public class AdoptionRequestService {
         this.usersRepository = usersRepository;
     }
 
-    // =========================================================
-    // B) إرسال طلب تبنّي
-    // =========================================================
-    public void createRequest(
-            Long postId,
-            CreateAdoptionRequestDTO dto
-    ) {
+
+    /**
+     * Submits a new adoption request for a specific adoption post.
+     *
+     * Rules enforced:
+     * 1. Only authenticated users can submit requests.
+     * 2. Post must be OPEN.
+     * 3. Users cannot submit requests for their own posts.
+     * 4. Duplicate requests by the same user for the same post are not allowed.
+     *
+     * @param postId The ID of the adoption post.
+     * @param dto    The request details (phone, city, message).
+     */
+    public void createRequest(Long postId, CreateAdoptionRequestDTO dto) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
@@ -55,21 +75,18 @@ public class AdoptionRequestService {
         AdoptionPost post = adoptionPostRepository.findById(postId)
                 .orElseThrow(() -> new EntityNotFoundException("Adoption post not found"));
 
-        // البوست لازم يكون OPEN
         if (post.getAdoptionStatus() != AdoptionStatus.OPEN) {
             throw new IllegalStateException("Adoption post is not open");
         }
 
-        // ممنوع صاحب البوست يقدّم طلب
         if (post.getUser().getId().equals(user.getId())) {
-
             throw new AccessDeniedException("Cannot request your own adoption post");
         }
 
-        // ممنوع يقدّم طلب مرتين
         if (requestRepository.existsByAdoptionPost_IdAndRequester_Id(postId, user.getId())) {
             throw new IllegalStateException("You already submitted a request");
         }
+
 
         AdoptionRequest request = new AdoptionRequest();
         request.setAdoptionPost(post);
@@ -82,13 +99,16 @@ public class AdoptionRequestService {
         requestRepository.save(request);
     }
 
-    // =========================================================
-    // C) صاحب البوست يشوف الطلبات (Pagination)
-    // =========================================================
-    public Page<AdoptionRequestResponseDTO> getRequests(
-            Long postId,
-            Pageable pageable
-    ) {
+
+    /**
+     * Returns a paginated list of adoption requests for a given adoption post.
+     * Only the owner of the post can access the requests.
+     *
+     * @param postId   The adoption post ID.
+     * @param pageable Pagination settings.
+     * @return Page of AdoptionRequestResponseDTO objects.
+     */
+    public Page<AdoptionRequestResponseDTO> getRequests(Long postId, Pageable pageable) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
@@ -105,12 +125,18 @@ public class AdoptionRequestService {
                 .map(AdoptionRequestMapper::toDTO);
     }
 
-    // =========================================================
-    // C) Accept request → RESERVED
-    // =========================================================
-    public void acceptRequest(
-            Long requestId
-    ) {
+
+    /**
+     * Accepts a pending adoption request. Only the post owner can accept requests.
+     *
+     * Effects:
+     * 1. The accepted request status becomes ACCEPTED.
+     * 2. The adoption post status becomes RESERVED.
+     * 3. All other requests for this post are rejected.
+     *
+     * @param requestId The ID of the adoption request to accept.
+     */
+    public void acceptRequest(Long requestId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
@@ -120,37 +146,36 @@ public class AdoptionRequestService {
 
         AdoptionPost post = request.getAdoptionPost();
 
-        // فقط صاحب البوست
         if (!post.getUser().getId().equals(userPrinciple.getId())) {
             throw new AccessDeniedException("Not allowed");
         }
 
-        // لازم يكون البوست OPEN
         if (post.getAdoptionStatus() != AdoptionStatus.OPEN) {
             throw new IllegalStateException("Adoption post is not open");
         }
 
-        // الطلب لازم يكون PENDING
         if (request.getStatus() != AdoptionRequestStatus.PENDING) {
             throw new IllegalStateException("Invalid request state");
         }
 
-        // قبول الطلب
+
         request.setStatus(AdoptionRequestStatus.ACCEPTED);
 
-        // البوست يصير RESERVED
+
         post.setAdoptionStatus(AdoptionStatus.RESERVED);
 
-        // رفض باقي الطلبات
+
         requestRepository.rejectAllExcept(post.getId(), request.getId());
     }
 
-    // =========================================================
-    // D) Completing the adoption (RESERVED → COMPLETED)
-    // =========================================================
-    public void completeAdoption(
-            Long postId
-    ) {
+
+    /**
+     * Marks an adoption post as completed and transfers ownership of the pet.
+     * Only the post owner can complete the adoption.
+     *
+     * @param postId The adoption post ID.
+     */
+    public void completeAdoption(Long postId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
@@ -168,25 +193,24 @@ public class AdoptionRequestService {
 
         post.setAdoptionStatus(AdoptionStatus.COMPLETED);
 
-        // نقل ملكية الحيوان
+
         requestRepository
-                .findByAdoptionPost_IdAndStatus(
-                        postId,
-                        AdoptionRequestStatus.ACCEPTED
-                )
-                .ifPresent(req ->
-                        post.getPet().setUser(req.getRequester())
-                );
+                .findByAdoptionPost_IdAndStatus(postId, AdoptionRequestStatus.ACCEPTED)
+                .ifPresent(req -> post.getPet().setUser(req.getRequester()));
+
 
         adoptionPostRepository.delete(post);
     }
 
-    // =========================================================
-    // E) Cancel adoption post
-    // =========================================================
-    public void cancelAdoption(
-            Long postId
-    ) {
+
+    /**
+     * Cancels an adoption post and rejects all pending requests.
+     * Only the post owner can cancel.
+     * Cannot cancel a completed adoption.
+     *
+     * @param postId The ID of the adoption post to cancel.
+     */
+    public void cancelAdoption(Long postId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
@@ -198,12 +222,14 @@ public class AdoptionRequestService {
             throw new AccessDeniedException("Not allowed");
         }
 
-        if(post.getAdoptionStatus() == AdoptionStatus.COMPLETED) {
+        if (post.getAdoptionStatus() == AdoptionStatus.COMPLETED) {
             throw new IllegalStateException("Adoption has already been completed");
         }
 
-        // رفض كل الطلبات المعلقة
+
         post.getRequests().forEach(req -> req.setStatus(AdoptionRequestStatus.REJECTED));
+
+
         adoptionPostRepository.delete(post);
     }
 }

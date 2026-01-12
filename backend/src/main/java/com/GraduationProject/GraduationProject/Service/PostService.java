@@ -17,11 +17,20 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Service responsible for creating and fetching posts (both regular and adoption)
+ * in the Pet Nexus application.
+ *
+ * Responsibilities include:
+ * 1. Creating Regular Posts
+ * 2. Creating Adoption Posts (with ownership and duplication checks)
+ * 3. Retrieving feeds with pagination
+ * 4. Retrieving adoption posts specific to the logged-in user
+ */
 @Service
 @Transactional
 public class PostService {
@@ -46,30 +55,47 @@ public class PostService {
         this.adoptionPostRepository = adoptionPostRepository;
     }
 
-    // ---------- CREATE REGULAR POST ----------
-    public RegularPostDTO createRegularPost(
-            CreatePostDTO dto
-    ) {
+
+    /**
+     * Creates a regular post for the currently authenticated user.
+     *
+     * @param dto Data transfer object containing post details (content, image, etc.)
+     * @return RegularPostDTO containing saved post information
+     * @throws EntityNotFoundException if the authenticated user is not found in the database
+     */
+    public RegularPostDTO createRegularPost(CreatePostDTO dto) {
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
 
-        Users user = usersRepository.findById(userPrinciple.getId()).orElseThrow(
-                () -> new EntityNotFoundException("User with id " + userPrinciple.getId() + " not found")
-        );
+        Users user = usersRepository.findById(userPrinciple.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "User with id " + userPrinciple.getId() + " not found"
+                ));
 
-        RegularPost post =
-                PostFactory.createRegularPost(dto, user);
 
-        return PostMapper.toRegularPostDTO(
-                postRepository.save(post)
-        );
+        RegularPost post = PostFactory.createRegularPost(dto, user);
+
+
+        return PostMapper.toRegularPostDTO(postRepository.save(post));
     }
 
-    // ---------- CREATE ADOPTION POST ----------
-    public AdoptionPostDTO createAdoptionPost(
-            CreatePostDTO dto
-    ) {
 
+    /**
+     * Creates an adoption post for a pet owned by the authenticated user.
+     *
+     * Validations:
+     * 1. Pet must exist.
+     * 2. Pet must be owned by the authenticated user.
+     * 3. No duplicate adoption post allowed for the same pet.
+     *
+     * @param dto Data transfer object containing adoption post details
+     * @return AdoptionPostDTO containing saved adoption post information
+     * @throws EntityNotFoundException if the user or pet does not exist
+     * @throws RuntimeException if an adoption post already exists for the pet
+     * @throws AccessDeniedException if the authenticated user does not own the pet
+     */
+    public AdoptionPostDTO createAdoptionPost(CreatePostDTO dto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
 
@@ -79,48 +105,67 @@ public class PostService {
         Pet pet = petRepository.findById(dto.getPetId())
                 .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
 
-        if(postRepository.findAdoptionPostByPetId(pet.getId())!=null) {
-            throw new RuntimeException("Adoption post already exists");
+
+        if (postRepository.findAdoptionPostByPetId(pet.getId()) != null) {
+            throw new RuntimeException("Adoption post already exists for this pet");
         }
 
-        // 🔐 Ownership check
+
         if (!pet.getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("You do not own this pet");
         }
 
-        AdoptionPost post =
-                PostFactory.createAdoptionPost(dto, user, pet);
+        AdoptionPost post = PostFactory.createAdoptionPost(dto, user, pet);
 
         postRepository.save(post);
         return PostMapper.toAdoptionPostDTO(post);
     }
 
-    // ---------- FEED + PAGINATION ----------
 
-        public Page<RegularPostDTO> getRegularPosts(Pageable pageable) {
-           return regularPostRepository.findRegularPost(pageable)
-                   .map(postMapper -> PostMapper.toRegularPostDTO(postMapper));
+    /**
+     * Retrieves a paginated list of regular posts for the feed.
+     *
+     * @param pageable Pageable object for pagination
+     * @return Page of RegularPostDTO
+     */
+    public Page<RegularPostDTO> getRegularPosts(Pageable pageable) {
+        return regularPostRepository.findRegularPost(pageable)
+                .map(PostMapper::toRegularPostDTO);
+    }
+
+    /**
+     * Retrieves a paginated list of adoption posts for the feed.
+     *
+     * @param pageable Pageable object for pagination
+     * @return Page of AdoptionPostDTO
+     */
+    public Page<AdoptionPostDTO> getAdoptionPosts(Pageable pageable) {
+        return adoptionPostRepository.findAdoptionPost(pageable)
+                .map(PostMapper::toAdoptionPostDTO);
+    }
+
+    /**
+     * Retrieves all adoption posts created by the currently authenticated user.
+     *
+     * @return List of AdoptionPostDTO for the current user
+     * @throws EntityNotFoundException if authenticated user does not exist
+     */
+    public List<AdoptionPostDTO> getAdoptionPostsByUserId() {
+        List<AdoptionPostDTO> adoptionPostDTOs = new ArrayList<>();
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
+
+        Users user = usersRepository.findById(userPrinciple.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "User with id " + userPrinciple.getId() + " not found"
+                ));
+
+
+        for (AdoptionPost adoptionPost : adoptionPostRepository.findPostsByUserId(user.getId())) {
+            adoptionPostDTOs.add(PostMapper.toAdoptionPostDTO(adoptionPost));
         }
 
-        public Page<AdoptionPostDTO> getAdoptionPosts(Pageable pageable) {
-               return adoptionPostRepository.findAdoptionPost(pageable)
-                       .map(postMapper ->PostMapper.toAdoptionPostDTO(postMapper));
-        }
-
-        public List<AdoptionPostDTO> getAdoptionPostsByUserId() {
-            List<AdoptionPostDTO> adoptionPostDTOs = new ArrayList<>();
-
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
-
-            Users user = usersRepository.findById(userPrinciple.getId()).orElseThrow(
-                    () -> new EntityNotFoundException("User with id " + userPrinciple.getId() + " not found")
-            );
-
-            for(AdoptionPost adoptionPost:adoptionPostRepository.findPostsByUserId(user.getId())) {
-                adoptionPostDTOs.add(PostMapper.toAdoptionPostDTO(adoptionPost));
-            }
-            return adoptionPostDTOs;
-        }
-
+        return adoptionPostDTOs;
+    }
 }

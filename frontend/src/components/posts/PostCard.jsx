@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import CommentsDialog from "./dialogs/CommentsDialog";
-
+import { MessageCircle } from 'lucide-react';
 function getRelativeTime(createdAt) {
   // backend format: "2026-01-03 13:24:29"
   const postDate = new Date(createdAt.replace(" ", "T"));
@@ -89,7 +89,7 @@ export default function PostCard({ post }) {
               onClick={() => setOpen(true)}
               className="text-xl hover:scale-110 transition"
             >
-              💬
+                <MessageCircle />
             </button>
             <span className="text-sm text-white/70">
               {post.commentCount} comments

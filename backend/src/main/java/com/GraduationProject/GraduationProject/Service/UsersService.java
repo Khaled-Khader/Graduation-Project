@@ -1,13 +1,10 @@
 package com.GraduationProject.GraduationProject.Service;
 
-import com.GraduationProject.GraduationProject.DTO.LoginResult;
-import com.GraduationProject.GraduationProject.DTO.UserLoginDTO;
-import com.GraduationProject.GraduationProject.DTO.UserResponseDTO;
-import com.GraduationProject.GraduationProject.DTO.UsersRegisterDTO;
+import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
-import com.GraduationProject.GraduationProject.Repository.*;
+import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -15,9 +12,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Service responsible for managing Users.
+ *
+ * Responsibilities:
+ *  - User registration (addUser)
+ *  - User login/authentication (verify)
+ *  - JWT generation
+ *  - Utility methods such as checking user existence and deleting test data
+ */
 @Service
 @Transactional
 public class UsersService {
@@ -27,22 +30,30 @@ public class UsersService {
     private final AuthenticationManager authenticationManager;
     private final JWTService jwtService;
 
-    public UsersService(UsersRepository usersRepository ,
+    public UsersService(UsersRepository usersRepository,
                         BCryptPasswordEncoder bCryptPasswordEncoder,
                         AuthenticationManager authenticationManager,
-                        JWTService jwtService
-                        ) {
+                        JWTService jwtService) {
         this.usersRepository = usersRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-
     }
+
+
 
     public boolean isUserExists(String email) {
         return usersRepository.existsByEmail(email);
     }
 
+
+    /**
+     * Registers a new user with role-specific info and generates a JWT for authentication.
+     *
+     * @param usersRegisterDTO DTO containing user registration info
+     * @return LoginResult containing JWT token and basic user info
+     * @throws EmailAlreadyExistsException if email is already in use
+     */
     public LoginResult addUser(UsersRegisterDTO usersRegisterDTO) {
         if (usersRepository.existsByEmail(usersRegisterDTO.email())) {
             throw new EmailAlreadyExistsException("Email Already Exists");
@@ -53,7 +64,7 @@ public class UsersService {
         users.setPasswordHash(bCryptPasswordEncoder.encode(usersRegisterDTO.passwordHash()));
         users.setRole(usersRegisterDTO.role());
 
-        // User info
+
         UserInfo userInfo = new UserInfo();
         userInfo.setUsers(users);
         userInfo.setFirstName(usersRegisterDTO.userInfoDTO().firstName());
@@ -62,7 +73,7 @@ public class UsersService {
         userInfo.setPhotoUrl(usersRegisterDTO.userInfoDTO().photoUrl());
         users.setUserInfo(userInfo);
 
-        // Role-specific entities
+
         switch (usersRegisterDTO.role()) {
             case VET -> {
                 Vet vet = new Vet();
@@ -86,10 +97,10 @@ public class UsersService {
             }
         }
 
-        // Save user
+
         usersRepository.save(users);
 
-        // Generate JWT directly
+
         String jwt = jwtService.generateJWTToken(users.getEmail(), users.getRole().toString());
 
         UserResponseDTO userResponseDTO = new UserResponseDTO(
@@ -106,43 +117,51 @@ public class UsersService {
         return usersRepository.findByEmail(email);
     }
 
+
+    /**
+     * Verifies user login credentials.
+     *
+     * @param userLoginDTO DTO containing email and password
+     * @return LoginResult with JWT token and user info, or null if authentication fails
+     */
     public LoginResult verify(UserLoginDTO userLoginDTO) {
-
-
-
         try {
+
             Authentication authentication =
                     authenticationManager.authenticate(
-                            new UsernamePasswordAuthenticationToken(userLoginDTO.email(), userLoginDTO.passwordHash())
+                            new UsernamePasswordAuthenticationToken(
+                                    userLoginDTO.email(),
+                                    userLoginDTO.passwordHash()
+                            )
                     );
 
             Users user = usersRepository.findByEmail(userLoginDTO.email());
 
-            String jwt=jwtService.generateJWTToken(userLoginDTO.email(), user.getRole().name());
+            String jwt = jwtService.generateJWTToken(userLoginDTO.email(), user.getRole().name());
 
-            UserResponseDTO userResponseDTO=new UserResponseDTO(
+            UserResponseDTO userResponseDTO = new UserResponseDTO(
                     user.getEmail(),
                     user.getRole().toString(),
                     user.getId()
             );
-            LoginResult loginResult=new LoginResult(jwt,userResponseDTO);
-            return loginResult;
-        }catch (Exception e){
+
+            return new LoginResult(jwt, userResponseDTO);
+
+        } catch (Exception e) {
+
             return null;
         }
-
     }
 
 
-
-
-
-
+    /**
+     * Deletes all users in the database. Useful for resetting test data.
+     *
+     * @return confirmation message
+     */
     @Transactional
     public String deleteAllTestData() {
         usersRepository.deleteAll();
         return "All test data has been deleted";
     }
-
-
 }

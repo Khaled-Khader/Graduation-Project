@@ -22,5 +22,6 @@ public interface AdoptionPostRepository
     Page<AdoptionPost> findAdoptionPost(Pageable pageable);
 
     List<AdoptionPost> findPostsByUserId(Long userId);
+    AdoptionPost findAdoptionPostByPetId(Long id);
 }
 

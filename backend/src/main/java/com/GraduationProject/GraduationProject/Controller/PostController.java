@@ -8,16 +8,23 @@ import com.GraduationProject.GraduationProject.Service.PostService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
+/**
+ * Controller for managing posts in PetNexus.
+ *
+ * Responsibilities:
+ *  - Creating regular and adoption posts
+ *  - Retrieving posts for feeds (regular, adoption, all)
+ *  - Retrieving adoption posts of the authenticated user
+ *
+ * Pagination is supported using Spring's Pageable.
+ */
 @RestController
 @RequestMapping("/post")
 public class PostController {
@@ -28,23 +35,28 @@ public class PostController {
         this.postService = postService;
     }
 
-    // =========================================
-    // Create Regular Post
-    // =========================================
+
+    /**
+     * Adds a new regular post for the authenticated user.
+     *
+     * @param dto DTO containing post details (title, content, image, etc.)
+     * @return DTO representing the created regular post
+     */
     @PostMapping("/regular")
-    public RegularPostDTO createRegularPost(
-            @RequestBody CreatePostDTO dto
-    ) {
+    public RegularPostDTO createRegularPost(@RequestBody CreatePostDTO dto) {
         return postService.createRegularPost(dto);
     }
 
-    // =========================================
-    // Create Adoption Post
-    // =========================================
+
+    /**
+     * Adds a new adoption post for the authenticated user.
+     * The pet must belong to the user and not already have an adoption post.
+     *
+     * @param dto DTO containing adoption post details
+     * @return DTO representing the created adoption post
+     */
     @PostMapping("/adoption")
-    public AdoptionPostDTO createAdoptionPost(
-            @RequestBody CreatePostDTO dto
-    ) {
+    public AdoptionPostDTO createAdoptionPost(@RequestBody CreatePostDTO dto) {
         return postService.createAdoptionPost(dto);
     }
 
@@ -53,54 +65,52 @@ public class PostController {
         return postService.getAdoptionPostsByUserId();
     }
 
-    // =========================================
-    // Feed (ALL / REGULAR / ADOPTION)
-    // =========================================
 
+
+    /**
+     * Retrieves a feed of regular posts (paginated and shuffled).
+     *
+     * @param pageable Pageable object to control page size and number
+     * @return Page of RegularPostDTO objects
+     */
     @GetMapping("/feed/regular")
-    public Page<RegularPostDTO> getRegularPosts(
-            @PageableDefault( size = 10) Pageable pageable
-    ){
-        List<RegularPostDTO>regularPostDTOS=new ArrayList<>();
-        for(RegularPostDTO r:postService.getRegularPosts(pageable)){
-            regularPostDTOS.add(r);
-        }
+    public Page<RegularPostDTO> getRegularPosts(@PageableDefault(size = 10) Pageable pageable) {
+        List<RegularPostDTO> regularPostDTOS = new ArrayList<>();
+        postService.getRegularPosts(pageable).forEach(regularPostDTOS::add);
 
-        Collections.shuffle(regularPostDTOS);
-        return new PageImpl<>(regularPostDTOS,pageable,regularPostDTOS.size());
+        Collections.shuffle(regularPostDTOS); // Shuffle feed for randomness
+        return new PageImpl<>(regularPostDTOS, pageable, regularPostDTOS.size());
     }
 
+    /**
+     * Retrieves a feed of adoption posts (paginated and shuffled).
+     *
+     * @param pageable Pageable object to control page size and number
+     * @return Page of AdoptionPostDTO objects
+     */
     @GetMapping("/feed/adoption")
-    public Page<AdoptionPostDTO> getAdoptionPosts(
-            @PageableDefault( size = 10) Pageable pageable
-    ){
-        List<AdoptionPostDTO>adoptionPostDTOS=new ArrayList<>();
-        for(AdoptionPostDTO r:postService.getAdoptionPosts(pageable)){
-            adoptionPostDTOS.add(r);
-        }
+    public Page<AdoptionPostDTO> getAdoptionPosts(@PageableDefault(size = 10) Pageable pageable) {
+        List<AdoptionPostDTO> adoptionPostDTOS = new ArrayList<>();
+        postService.getAdoptionPosts(pageable).forEach(adoptionPostDTOS::add);
 
         Collections.shuffle(adoptionPostDTOS);
-        return new PageImpl<>(adoptionPostDTOS,pageable,adoptionPostDTOS.size());
+        return new PageImpl<>(adoptionPostDTOS, pageable, adoptionPostDTOS.size());
     }
 
+    /**
+     * Retrieves a feed containing all posts (regular + adoption), paginated and shuffled.
+     *
+     * @param pageable Pageable object to control page size and number
+     * @return Page of AllPosts objects (can be either RegularPostDTO or AdoptionPostDTO)
+     */
     @GetMapping("/feed/all")
-    public Page<AllPosts> getAllPosts(
-            @PageableDefault( size = 10) Pageable pageable
-    ){
-
-
+    public Page<AllPosts> getAllPosts(@PageableDefault(size = 10) Pageable pageable) {
         List<AllPosts> allPosts = new ArrayList<>();
 
-        for (RegularPostDTO r : postService.getRegularPosts(pageable)) {
-            allPosts.add(r);
-        }
-
-        for (AdoptionPostDTO a : postService.getAdoptionPosts(pageable)) {
-            allPosts.add(a);
-        }
+        postService.getRegularPosts(pageable).forEach(allPosts::add);
+        postService.getAdoptionPosts(pageable).forEach(allPosts::add);
 
         Collections.shuffle(allPosts);
         return new PageImpl<>(allPosts, pageable, allPosts.size());
     }
-
 }

@@ -5,12 +5,16 @@
     export default function PetCard({ pet, onRemove, currentUserId }) {
     const [openConfirm, setOpenConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null); // <-- Error state
 
     async function handleConfirmRemove() {
         try {
         setLoading(true);
+        setError(null); // reset error before trying
         await onRemove(pet.id);
         setOpenConfirm(false);
+        } catch (err) {
+        setError("Can not remove pet, its on adoption post"); // <-- set error message
         } finally {
         setLoading(false);
         }
@@ -55,9 +59,7 @@
                 {genderLabel && (
                 <>
                     <span>•</span>
-                    <span className="text-[#6B8CFF] font-medium">
-                    {genderLabel}
-                    </span>
+                    <span className="text-[#6B8CFF] font-medium">{genderLabel}</span>
                 </>
                 )}
             </p>
@@ -68,9 +70,7 @@
                 </span>
 
                 {pet.hasVaccineCert && (
-                <span className="text-[#6B8CFF] font-medium">
-                    💉 Vaccinated
-                </span>
+                <span className="text-[#6B8CFF] font-medium">💉 Vaccinated</span>
                 )}
             </div>
             </div>
@@ -99,16 +99,18 @@
         </div>
 
         {/* CONFIRM DIALOG */}
-        <Dialog
-            open={openConfirm}
-            onClose={() => !loading && setOpenConfirm(false)}
-        >
+        <Dialog open={openConfirm} onClose={() => !loading && setOpenConfirm(false)}>
             <h2 className="text-xl font-semibold mb-3">Remove pet</h2>
 
             <p className="text-white/70 mb-6">
             Are you sure you want to remove{" "}
             <span className="text-white font-medium">{pet.name}</span>?
             </p>
+
+            {/* Error message */}
+            {error && (
+            <p className="text-red-500 text-sm mb-4">{error}</p>
+            )}
 
             <div className="flex justify-end gap-3">
             <button

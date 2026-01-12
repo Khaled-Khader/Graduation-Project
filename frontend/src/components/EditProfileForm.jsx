@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "../Auth/AuthHook";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { patchProfile } from "../util/http";
@@ -9,10 +9,9 @@ export default function EditProfileForm({ onClose, profile }) {
     const queryClient = useQueryClient();
     const [uploading, setUploading] = useState(false);
 
-    // 🔹 validation regex (SAME as signup)
+    // 🔹 only ONE word – letters only – 2 to 30 chars
     const singleWordRegex = /^[A-Za-z]{2,30}$/;
 
-    // 🔹 validation errors
     const [firstNameError, setFirstNameError] = useState("");
     const [lastNameError, setLastNameError] = useState("");
 
@@ -36,6 +35,31 @@ export default function EditProfileForm({ onClose, profile }) {
         },
     });
 
+    // =============================
+    // NAME HANDLER (NO SPACES)
+    // =============================
+    function handleNameChange(field, value) {
+        if (value.includes(" ")) return;
+
+        setForm((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+
+        if (!singleWordRegex.test(value)) {
+            field === "firstName"
+                ? setFirstNameError("Only one word (2–30 letters)")
+                : setLastNameError("Only one word (2–30 letters)");
+        } else {
+            field === "firstName"
+                ? setFirstNameError("")
+                : setLastNameError("");
+        }
+    }
+
+    // =============================
+    // IMAGE
+    // =============================
     async function handleImageChange(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -52,46 +76,44 @@ export default function EditProfileForm({ onClose, profile }) {
     }
 
     function handleRemoveImage() {
-        let content = "";
+        let defaultImage = "";
 
         if (user.role === "OWNER") {
-            content =
+            defaultImage =
                 "https://res.cloudinary.com/di1xpud7d/image/upload/v1767881569/owner_qazol0.jpg";
         } else if (user.role === "VET") {
-            content =
+            defaultImage =
                 "https://res.cloudinary.com/di1xpud7d/image/upload/v1767881562/vet_k8pgey.jpg";
         } else if (user.role === "CLINIC") {
-            content =
+            defaultImage =
                 "https://res.cloudinary.com/di1xpud7d/image/upload/v1767881554/clinic_d2jav0.jpg";
         }
 
-        setForm((prev) => ({ ...prev, photoUrl: content }));
+        setForm((prev) => ({ ...prev, photoUrl: defaultImage }));
     }
 
+    // =============================
+    // FORM VALIDATION
+    // =============================
+    const isFormValid = useMemo(() => {
+        return (
+            singleWordRegex.test(form.firstName) &&
+            singleWordRegex.test(form.lastName)
+        );
+    }, [form.firstName, form.lastName]);
+
+    // =============================
+    // SUBMIT
+    // =============================
     function handleSubmit(e) {
         e.preventDefault();
+        if (!isFormValid) return;
 
-        // 🔹 FIRST NAME validation
-        if (!singleWordRegex.test(form.firstName)) {
-            setFirstNameError(
-                "First name must be a single word, 2–30 letters only"
-            );
-            return;
-        } else {
-            setFirstNameError("");
-        }
-
-        // 🔹 LAST NAME validation
-        if (!singleWordRegex.test(form.lastName)) {
-            setLastNameError(
-                "Last name must be a single word, 2–30 letters only"
-            );
-            return;
-        } else {
-            setLastNameError("");
-        }
-
-        mutation.mutate(form);
+        mutation.mutate({
+            ...form,
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+        });
     }
 
     return (
@@ -108,13 +130,9 @@ export default function EditProfileForm({ onClose, profile }) {
                             placeholder="First Name"
                             value={form.firstName}
                             onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    firstName: e.target.value,
-                                })
+                                handleNameChange("firstName", e.target.value)
                             }
                             className="rounded-xl bg-white/10 px-4 py-2 text-white w-full"
-                            required
                         />
                         {firstNameError && (
                             <p className="text-red-400 text-sm mt-1">
@@ -128,13 +146,9 @@ export default function EditProfileForm({ onClose, profile }) {
                             placeholder="Last Name"
                             value={form.lastName}
                             onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    lastName: e.target.value,
-                                })
+                                handleNameChange("lastName", e.target.value)
                             }
                             className="rounded-xl bg-white/10 px-4 py-2 text-white w-full"
-                            required
                         />
                         {lastNameError && (
                             <p className="text-red-400 text-sm mt-1">
@@ -156,7 +170,7 @@ export default function EditProfileForm({ onClose, profile }) {
                     maxLength={50}
                 />
 
-                {/* IMAGE INPUT + REMOVE */}
+                {/* IMAGE INPUT + REMOVE (RESTORED) */}
                 <div className="flex items-center gap-3">
                     <input
                         type="file"
@@ -190,97 +204,26 @@ export default function EditProfileForm({ onClose, profile }) {
                     />
                 )}
 
-                {/* VET */}
-                {profile.role === "VET" && (
-                    <input
-                        placeholder="Specialty"
-                        value={form.specialty}
-                        onChange={(e) =>
-                            setForm({
-                                ...form,
-                                specialty: e.target.value,
-                            })
-                        }
-                        className="w-full rounded-xl bg-white/10 px-4 py-2 text-white"
-                    />
-                )}
-
-                {/* CLINIC */}
-                {profile.role === "CLINIC" && (
-                    <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <input
-                                type="number"
-                                placeholder="Latitude"
-                                value={form.latitude}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        latitude: e.target.value,
-                                    })
-                                }
-                                className="rounded-xl bg-white/10 px-4 py-2 text-white"
-                            />
-
-                            <input
-                                type="number"
-                                placeholder="Longitude"
-                                value={form.longitude}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        longitude: e.target.value,
-                                    })
-                                }
-                                className="rounded-xl bg-white/10 px-4 py-2 text-white"
-                            />
-                        </div>
-
-                        <input
-                            placeholder="City"
-                            value={form.city}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    city: e.target.value,
-                                })
-                            }
-                            className="w-full rounded-xl bg-white/10 px-4 py-2 text-white"
-                        />
-
-                        <input
-                            placeholder="Address"
-                            value={form.address}
-                            onChange={(e) =>
-                                setForm({
-                                    ...form,
-                                    address: e.target.value,
-                                })
-                            }
-                            className="w-full rounded-xl bg-white/10 px-4 py-2 text-white"
-                        />
-                    </>
-                )}
-
-                {/* ACTION BUTTONS */}
+                {/* ACTIONS */}
                 <div className="flex gap-3 pt-2">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex-1 px-4 py-3 rounded-xl bg-gray-700 text-white hover:bg-gray-600 transition"
+                        className="flex-1 px-4 py-3 rounded-xl bg-gray-700 text-white"
                     >
                         Cancel
                     </button>
 
                     <button
                         type="submit"
-                        disabled={mutation.isPending || uploading}
-                        className="
-                            flex-1 bg-gradient-to-r from-[#4F7CFF] to-[#355CFF]
-                            py-3 rounded-xl font-semibold text-white
-                            hover:from-[#6A8CFF] hover:to-[#4A6BFF]
-                            transition-all duration-200
-                        "
+                        disabled={!isFormValid || mutation.isPending || uploading}
+                        className={`flex-1 py-3 rounded-xl font-semibold text-white transition
+                            ${
+                                !isFormValid || mutation.isPending || uploading
+                                    ? "bg-gray-500 cursor-not-allowed opacity-60"
+                                    : "bg-gradient-to-r from-[#4F7CFF] to-[#355CFF]"
+                            }
+                        `}
                     >
                         Save
                     </button>

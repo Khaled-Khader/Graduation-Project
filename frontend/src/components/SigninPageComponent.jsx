@@ -27,7 +27,7 @@
             onError: (err) => {
             // show inline error under fields
             if (err.message.includes("Invalid email")) {
-                setEmailError("Invalid email or account does not exist");
+                setEmailError("Invalid email or password or account does not exist");
             } else if (err.message.includes("Invalid password")) {
                 setPasswordError("Incorrect password");
             } else {

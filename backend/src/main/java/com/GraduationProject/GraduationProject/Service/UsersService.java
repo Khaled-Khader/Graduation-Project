@@ -153,15 +153,4 @@ public class UsersService {
         }
     }
 
-
-    /**
-     * Deletes all users in the database. Useful for resetting test data.
-     *
-     * @return confirmation message
-     */
-    @Transactional
-    public String deleteAllTestData() {
-        usersRepository.deleteAll();
-        return "All test data has been deleted";
-    }
 }

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import CancelAdoptionPostDialog from "../components/posts/dialogs/CancelAdoptionPostDialog";
 import { useGetUserAdoptionPosts } from "../hooks/useGetUserAdoptionPosts";
-import AdoptionRequestersDialog from "./posts/dialogs/AdoptionrequsetersDialog";
+import AdoptionRequestersDialog from "./posts/dialogs/AdoptionRequsetersDialog";
 import {useCompleteAdoptionPost} from "../hooks/useCompleteAdoptionPost"
 import { formatAge } from "../util/AgeFormatter";
 

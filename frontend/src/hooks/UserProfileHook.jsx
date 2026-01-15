@@ -4,7 +4,7 @@
     return useQuery({
         queryKey: ["userProfile", userId],  // array key
         queryFn: async () => {
-        const res = await fetch(`http://localhost:8080/user-profile/${userId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/user-profile/${userId}`, {
             credentials: "include",
         });
 

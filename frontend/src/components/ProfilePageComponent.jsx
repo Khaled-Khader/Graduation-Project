@@ -88,7 +88,7 @@ export default function ProfilePage() {
                                 </span>
                             )}
 
-                            {profile.role === "USER" && (
+                            {profile.role === "OWNER" && (
                                 <span className="px-4 py-1 rounded-full text-sm font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/30">
                                     🐾 Pet Owner
                                 </span>

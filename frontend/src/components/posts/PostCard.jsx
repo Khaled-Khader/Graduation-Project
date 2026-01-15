@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import CommentsDialog from "./dialogs/CommentsDialog";
 import { MessageCircle } from 'lucide-react';
 function getRelativeTime(createdAt) {
-  // backend format: "2026-01-03 13:24:29"
-  const postDate = new Date(createdAt.replace(" ", "T"));
+  const postDate = new Date(createdAt); // ISO UTC
   const now = new Date();
 
   const diffMs = now - postDate;

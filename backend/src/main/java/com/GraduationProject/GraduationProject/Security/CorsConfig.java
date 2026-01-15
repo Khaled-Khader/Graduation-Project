@@ -19,7 +19,7 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("frontend.url")
+    @Value("${frontend.url}")
     private String frontendUrl;
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

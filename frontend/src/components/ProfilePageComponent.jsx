@@ -57,9 +57,6 @@ export default function ProfilePage() {
         return deleteService.mutateAsync(id);
     }
 
-    console.log(profile.role)
-    
-
     return (
         <div className="flex justify-center">
             <div className="w-full max-w-6xl bg-white/5 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/10">
@@ -69,6 +66,7 @@ export default function ProfilePage() {
                     <img
                         src={profile.photoUrl}
                         className="w-32 h-32 rounded-full border-4 border-[#4F7CFF] object-cover shadow-md"
+                        alt="profile"
                     />
 
                     <div className="flex-1 text-center sm:text-left">
@@ -76,13 +74,33 @@ export default function ProfilePage() {
                             {profile.userInfoDTO?.firstName} {profile.userInfoDTO?.lastName}
                         </h1>
 
+                        {/* ROLE BADGE */}
+                        <div className="mt-2 flex justify-center sm:justify-start">
+                            {profile.role === "VET" && (
+                                <span className="px-4 py-1 rounded-full text-sm font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                                    🩺 Veterinarian
+                                </span>
+                            )}
+
+                            {profile.role === "CLINIC" && (
+                                <span className="px-4 py-1 rounded-full text-sm font-semibold bg-green-500/20 text-green-300 border border-green-400/30">
+                                    🏥 Veterinary Clinic
+                                </span>
+                            )}
+
+                            {profile.role === "USER" && (
+                                <span className="px-4 py-1 rounded-full text-sm font-semibold bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                                    🐾 Pet Owner
+                                </span>
+                            )}
+                        </div>
+
                         {profile.userInfoDTO?.bio && (
                             <p className="mt-3 text-white/70 max-w-xl line-clamp-3">
                                 {profile.userInfoDTO.bio}
                             </p>
                         )}
 
-                        
                         {/* Role-specific info under bio */}
                         {profile.role === "VET" && profile.vetDTO?.specialty && (
                             <p className="mt-1 text-white/60 max-w-xl">
@@ -116,12 +134,7 @@ export default function ProfilePage() {
 
                                 <button
                                     onClick={() => { setDialogType("EDIT_PROFILE"); setDialogOpen(true); }}
-                                    className="
-                                        bg-pink-500/20 text-pink-400
-                                        px-6 py-2.5 rounded-full font-semibold
-                                        hover:bg-pink-500/30 hover:text-pink-300
-                                        transition-all duration-200
-                                    "
+                                    className="bg-pink-500/20 text-pink-400 px-6 py-2.5 rounded-full font-semibold hover:bg-pink-500/30 hover:text-pink-300 transition-all duration-200"
                                 >
                                     Edit Profile
                                 </button>
@@ -136,7 +149,12 @@ export default function ProfilePage() {
                         <h2 className="text-3xl font-bold text-[#AFC2FF] mb-6">🐾 Pets</h2>
                         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
                             {profile.pets.map((pet) => (
-                                <PetCard key={pet.id} pet={pet} onRemove={handleDeletePet} currentUserId={isOwnerProfile} />
+                                <PetCard
+                                    key={pet.id}
+                                    pet={pet}
+                                    onRemove={handleDeletePet}
+                                    currentUserId={isOwnerProfile}
+                                />
                             ))}
                         </div>
                     </section>
@@ -148,7 +166,12 @@ export default function ProfilePage() {
                         <h2 className="text-3xl font-bold text-[#AFC2FF] mb-6">💼 Services</h2>
                         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
                             {profile.services.map((service, idx) => (
-                                <ServiceCard key={idx} service={service} onRemove={handleDeleteService} currentUserId={isOwnerProfile} />
+                                <ServiceCard
+                                    key={idx}
+                                    service={service}
+                                    onRemove={handleDeleteService}
+                                    currentUserId={isOwnerProfile}
+                                />
                             ))}
                         </div>
                     </section>
@@ -159,7 +182,9 @@ export default function ProfilePage() {
             <Dialog open={dialogOpen} onClose={closeDialog}>
                 {dialogType === "PET" && <AddPetForm onClose={closeDialog} userId={userId} />}
                 {dialogType === "SERVICE" && <AddServiceForm onClose={closeDialog} />}
-                {dialogType === "EDIT_PROFILE" && <EditProfileForm onClose={closeDialog} profile={profile} />}
+                {dialogType === "EDIT_PROFILE" && (
+                    <EditProfileForm onClose={closeDialog} profile={profile} />
+                )}
             </Dialog>
         </div>
     );

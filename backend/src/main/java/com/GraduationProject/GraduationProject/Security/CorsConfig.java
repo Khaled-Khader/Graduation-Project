@@ -1,5 +1,6 @@
 package com.GraduationProject.GraduationProject.Security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,6 +19,8 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    @Value("frontend.url")
+    private String frontendUrl;
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -27,8 +30,8 @@ public class CorsConfig {
 
         // 🌍 Allowed frontend origins
         config.setAllowedOrigins(List.of(
-                "http://localhost:5173",          // Local development
-                "https://pet-nexus.vercel.app"    // Production frontend
+                frontendUrl,
+                "https://pet-nexus.vercel.app"
         ));
 
         // 🔁 Allowed HTTP methods

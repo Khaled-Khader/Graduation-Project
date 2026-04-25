@@ -21,7 +21,10 @@
         login.mutate(
         { email, password },
         {
-            onSuccess: () => {
+            onSuccess: (data) => {
+                if(data && data.id) {
+                localStorage.setItem("clinicId", data.id);
+                }
             navigate("/app");
             },
             onError: (err) => {

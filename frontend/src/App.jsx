@@ -11,6 +11,7 @@ import MapPage from "./pages/MapPage"
 import ChatPage from "./pages/ChatPage"
 import ProfilePage from "./pages/ProfilePage"
 import MyAdoptionsPosts from "./components/MyAdoptionPosts"
+import NearbyClinicsPage from "./pages/NearbyClinicsPage"
 import { QueryClient,QueryClientProvider } from "@tanstack/react-query"
 
 import ProtectedRoleRouter from "./Auth/ProtectedRoleRouter"
@@ -51,13 +52,13 @@ export default function App(){
           <MainLayoutPage/>
         </ProtectedRouter>
         ,
-        children:[
+        children: [
           { index: true, element: <PostsPage /> },
-          { path: "map", element: <MapPage /> },
+          { path: "map", element: <MapPage /> }, 
+          { path: "nearby-clinics", element: <NearbyClinicsPage /> }, 
           { path: "chat", element: <ChatPage /> },
           { path: "profile/:userId", element: <ProfilePage /> },
-          {path:"/app/my-adoptions" ,element:<MyAdoptionsPosts/>}
-          
+          { path: "my-adoptions", element: <MyAdoptionsPosts /> } 
         ]
 
       },

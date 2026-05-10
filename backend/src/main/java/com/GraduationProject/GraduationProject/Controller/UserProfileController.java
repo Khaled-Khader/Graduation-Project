@@ -1,7 +1,11 @@
 package com.GraduationProject.GraduationProject.Controller;
 
 import com.GraduationProject.GraduationProject.DTO.ProfileDTO;
+import com.GraduationProject.GraduationProject.DTO.ProviderSearchDTO;
 import com.GraduationProject.GraduationProject.Service.UserProfileService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +46,15 @@ public class UserProfileController {
     @GetMapping("/{userId}")
     public ProfileDTO getUserProfile(@PathVariable Long userId) {
         return userProfileService.getUserProfile(userId);
+    }
+
+
+    @GetMapping("/providers/search")
+    public Page<ProviderSearchDTO> searchProviders(
+            @RequestParam(defaultValue = "") String query,
+            @PageableDefault(size = 8, page = 0) Pageable pageable
+    ) {
+        return userProfileService.searchProviders(query, pageable);
     }
 
 

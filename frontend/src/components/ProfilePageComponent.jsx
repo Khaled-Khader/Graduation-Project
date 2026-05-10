@@ -10,6 +10,7 @@ import AddServiceForm from "../components/profile/AddServiceFrom";
 import { useDeletePet } from "../hooks/useDeletePet";
 import { useDeleteService } from "../hooks/useDeleteService";
 import EditProfileForm from "./EditProfileForm";
+import ChatButton from "./ChatButton";
 
 export default function ProfilePage() {
     const { userId } = useParams();
@@ -138,6 +139,15 @@ export default function ProfilePage() {
                                 >
                                     Edit Profile
                                 </button>
+                            </div>
+                        )}
+
+                        {/* Show Chat Button if user is not viewing their own profile and profile is VET/CLINIC */}
+                        {!isOwnerProfile && isVetOrClinic && (
+                            <div className="mt-6">
+                                <ChatButton
+                                    providerId={Number(userId)}
+                                />
                             </div>
                         )}
                     </div>

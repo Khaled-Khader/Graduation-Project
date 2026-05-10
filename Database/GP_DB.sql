@@ -328,6 +328,71 @@ INSERT INTO `users` VALUES (1,'clinic@gmail.com','$2a$10$OAFoL6B7zjVHxkp9aDn7BOm
 UNLOCK TABLES;
 
 --
+-- Table structure for table `chats`
+--
+
+DROP TABLE IF EXISTS `chats`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `chats` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) NOT NULL,
+  `is_active` bit(1) DEFAULT NULL,
+  `last_message_at` datetime(6) DEFAULT NULL,
+  `owner_id` bigint NOT NULL,
+  `provider_id` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_chat_owner_provider` (`owner_id`,`provider_id`),
+  KEY `idx_chat_owner` (`owner_id`),
+  KEY `idx_chat_provider` (`provider_id`),
+  KEY `idx_chat_last_message_at` (`last_message_at`),
+  CONSTRAINT `FK_chats_owner` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `FK_chats_provider` FOREIGN KEY (`provider_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `chats`
+--
+
+LOCK TABLES `chats` WRITE;
+/*!40000 ALTER TABLE `chats` DISABLE KEYS */;
+/*!40000 ALTER TABLE `chats` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `messages`
+--
+
+DROP TABLE IF EXISTS `messages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `messages` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `content` longtext NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `is_read` bit(1) DEFAULT NULL,
+  `read_at` datetime(6) DEFAULT NULL,
+  `chat_id` bigint NOT NULL,
+  `sender_id` bigint NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_message_chat_created_at` (`chat_id`,`created_at`),
+  KEY `idx_message_sender` (`sender_id`),
+  CONSTRAINT `FK_messages_chat` FOREIGN KEY (`chat_id`) REFERENCES `chats` (`id`),
+  CONSTRAINT `FK_messages_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `messages`
+--
+
+LOCK TABLES `messages` WRITE;
+/*!40000 ALTER TABLE `messages` DISABLE KEYS */;
+/*!40000 ALTER TABLE `messages` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `vet`
 --
 

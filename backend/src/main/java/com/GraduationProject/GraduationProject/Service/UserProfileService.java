@@ -5,6 +5,8 @@ import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Security.UserPrinciple;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -107,6 +109,36 @@ public class UserProfileService {
                 clinicDTO,
                 pets,
                 services
+        );
+    }
+
+    public Page<ProviderSearchDTO> searchProviders(String query, Pageable pageable) {
+        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
+
+        return usersRepository.searchProviders(
+                List.of(EnumRole.VET, EnumRole.CLINIC),
+                normalizedQuery,
+                pageable
+        ).map(this::toProviderSearchDTO);
+    }
+
+    private ProviderSearchDTO toProviderSearchDTO(Users user) {
+        String firstName = user.getUserInfo() != null ? user.getUserInfo().getFirstName() : null;
+        String lastName = user.getUserInfo() != null ? user.getUserInfo().getLastName() : null;
+        String photoUrl = user.getUserInfo() != null ? user.getUserInfo().getPhotoUrl() : null;
+        String specialty = user.getVet() != null ? user.getVet().getSpecialty() : null;
+        String city = user.getClinic() != null ? user.getClinic().getCity() : null;
+        String address = user.getClinic() != null ? user.getClinic().getAddress() : null;
+
+        return new ProviderSearchDTO(
+                user.getId(),
+                user.getRole().toString(),
+                firstName,
+                lastName,
+                photoUrl,
+                specialty,
+                city,
+                address
         );
     }
 

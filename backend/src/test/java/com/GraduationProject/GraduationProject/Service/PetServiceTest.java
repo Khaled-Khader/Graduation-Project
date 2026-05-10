@@ -4,6 +4,7 @@ import com.GraduationProject.GraduationProject.DTO.AddPetDTO;
 import com.GraduationProject.GraduationProject.Entity.Pet;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Repository.AdoptionPostRepository;
 import com.GraduationProject.GraduationProject.Repository.PetRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Security.UserPrinciple;
@@ -32,6 +33,9 @@ class PetServiceTest {
 
     @Mock
     private UsersRepository usersRepository;
+
+    @Mock
+    private AdoptionPostRepository adoptionPostRepository;
 
     @Mock
     private Authentication authentication;
@@ -130,6 +134,7 @@ class PetServiceTest {
         user.getPets().add(pet);
 
         when(petRepository.findById(5L)).thenReturn(Optional.of(pet));
+        when(adoptionPostRepository.findAdoptionPostByPetId(5L)).thenReturn(null);
         when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
 
         String result = petService.deletePet(5L);
@@ -157,7 +162,7 @@ class PetServiceTest {
                 () -> petService.deletePet(5L)
         );
 
-        assertEquals("You are not allow to remove this pet", ex.getMessage());
+        assertEquals("You are not allowed to remove this pet", ex.getMessage());
     }
 
     //  Cleanup

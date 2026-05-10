@@ -8,11 +8,10 @@ import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name="users")
+@Table(name = "users")
 public class Users {
 
     @Id
@@ -20,12 +19,11 @@ public class Users {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "email",unique = true )
+    @Column(name = "email", unique = true)
     private String email;
 
     @Column(name = "password_hash")
     private String passwordHash;
-
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
@@ -58,8 +56,28 @@ public class Users {
     )
     private List<Service> services = new ArrayList<>();
 
+    @OneToMany(
+            mappedBy = "owner",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Chat> initiatedChats = new ArrayList<>();
 
-    public Users( String email, String passwordHash, EnumRole role) {
+    @OneToMany(
+            mappedBy = "provider",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Chat> providedChats = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "sender",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Message> sentMessages = new ArrayList<>();
+
+    public Users(String email, String passwordHash, EnumRole role) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.role = role;
@@ -69,7 +87,5 @@ public class Users {
         this.services.add(service);
         service.setUser(this);
     }
-
-
 
 }

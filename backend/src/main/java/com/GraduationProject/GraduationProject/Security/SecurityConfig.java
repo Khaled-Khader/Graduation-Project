@@ -91,6 +91,7 @@ public class SecurityConfig {
                                 .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET", "OWNER")
                                 .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET", "OWNER")
                                 .requestMatchers("/post/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                                .requestMatchers("/chat/**").hasAnyRole("CLINIC", "VET", "OWNER")
                                 // Any other requests must be authenticated
                                 .anyRequest().authenticated())
                 // Stateless session: do not use HTTP session

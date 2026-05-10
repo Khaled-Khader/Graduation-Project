@@ -141,8 +141,26 @@ export async function http(url, options = {}) {
     });
 
     if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Request failed");
+        const contentType = response.headers.get("content-type") || "";
+        let message = "Request failed";
+
+        try {
+            if (contentType.includes("application/json")) {
+                const data = await response.json();
+                message = data.message || data.detail || data.error || message;
+            } else {
+                const text = await response.text();
+                message = text || message;
+            }
+        } catch {
+            message = "Request failed";
+        }
+
+        throw new Error(message);
+    }
+
+    if (response.status === 204) {
+        return null;
     }
 
     return response.json();

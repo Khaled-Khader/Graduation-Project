@@ -64,12 +64,24 @@ export async function LogoutFetchData(){
 }
 
 export async function addPet(data) {
-    return fetch(`${BASE_URL}/pet`, {
+    const response = await fetch(`${BASE_URL}/pet`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         credentials: "include",
     });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to add pet");
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+        return response.json();
+    }
+
+    return response.text();
 }
 
 export async function addService(data) {

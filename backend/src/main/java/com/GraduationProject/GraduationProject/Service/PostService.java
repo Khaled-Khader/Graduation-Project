@@ -38,6 +38,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final RegularPostRepository regularPostRepository;
     private final AdoptionPostRepository adoptionPostRepository;
+    private final AdoptionRequestRepository adoptionRequestRepository;
     private final UsersRepository usersRepository;
     private final PetRepository petRepository;
 
@@ -46,13 +47,15 @@ public class PostService {
             UsersRepository usersRepository,
             PetRepository petRepository,
             RegularPostRepository regularPostRepository,
-            AdoptionPostRepository adoptionPostRepository
+            AdoptionPostRepository adoptionPostRepository,
+            AdoptionRequestRepository adoptionRequestRepository
     ) {
         this.postRepository = postRepository;
         this.usersRepository = usersRepository;
         this.petRepository = petRepository;
         this.regularPostRepository = regularPostRepository;
         this.adoptionPostRepository = adoptionPostRepository;
+        this.adoptionRequestRepository = adoptionRequestRepository;
     }
 
 
@@ -118,7 +121,7 @@ public class PostService {
         AdoptionPost post = PostFactory.createAdoptionPost(dto, user, pet);
 
         postRepository.save(post);
-        return PostMapper.toAdoptionPostDTO(post);
+        return PostMapper.toAdoptionPostDTO(post, false);
     }
 
 
@@ -140,8 +143,10 @@ public class PostService {
      * @return Page of AdoptionPostDTO
      */
     public Page<AdoptionPostDTO> getAdoptionPosts(Pageable pageable) {
+        Long currentUserId = getCurrentUserId();
+
         return adoptionPostRepository.findAdoptionPost(pageable)
-                .map(PostMapper::toAdoptionPostDTO);
+                .map(post -> toAdoptionPostDTO(post, currentUserId));
     }
 
     /**
@@ -163,9 +168,31 @@ public class PostService {
 
 
         for (AdoptionPost adoptionPost : adoptionPostRepository.findPostsByUserId(user.getId())) {
-            adoptionPostDTOs.add(PostMapper.toAdoptionPostDTO(adoptionPost));
+            adoptionPostDTOs.add(toAdoptionPostDTO(adoptionPost, user.getId()));
         }
 
         return adoptionPostDTOs;
+    }
+
+    private AdoptionPostDTO toAdoptionPostDTO(AdoptionPost post, Long currentUserId) {
+        boolean requestedByCurrentUser = currentUserId != null
+                && !post.getUser().getId().equals(currentUserId)
+                && adoptionRequestRepository.existsByAdoptionPost_IdAndRequester_Id(
+                post.getId(),
+                currentUserId
+        );
+
+        return PostMapper.toAdoptionPostDTO(post, requestedByCurrentUser);
+    }
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !(authentication.getPrincipal() instanceof UserPrinciple userPrinciple)) {
+            return null;
+        }
+
+        return userPrinciple.getId();
     }
 }

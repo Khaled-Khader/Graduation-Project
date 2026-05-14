@@ -3,6 +3,7 @@ package com.GraduationProject.GraduationProject.Service;
 import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Repository.AdoptionPostRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Security.UserPrinciple;
 import org.springframework.data.domain.Page;
@@ -25,9 +26,14 @@ import java.util.List;
 public class UserProfileService {
 
     private final UsersRepository usersRepository;
+    private final AdoptionPostRepository adoptionPostRepository;
 
-    public UserProfileService(UsersRepository usersRepository) {
+    public UserProfileService(
+            UsersRepository usersRepository,
+            AdoptionPostRepository adoptionPostRepository
+    ) {
         this.usersRepository = usersRepository;
+        this.adoptionPostRepository = adoptionPostRepository;
     }
 
     /**
@@ -77,7 +83,8 @@ public class UserProfileService {
                 p.getPhotoUrl(),
                 p.getHealthStatus(),
                 p.getGender(),
-                p.isHasVaccineCert()
+                p.isHasVaccineCert(),
+                adoptionPostRepository.existsByPet_Id(p.getId())
         ))
                 .toList();
 

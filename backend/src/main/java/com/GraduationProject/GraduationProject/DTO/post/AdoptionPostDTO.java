@@ -15,4 +15,5 @@ public class AdoptionPostDTO implements AllPosts {
     PetDTO petDTO;
     String city;
     String adoptionStatus;
+    boolean requestedByCurrentUser;
 }

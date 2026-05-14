@@ -97,7 +97,8 @@ public class PetService {
                     pet.getPhotoUrl(),
                     pet.getHealthStatus(),
                     pet.getGender(),
-                    pet.isHasVaccineCert()
+                    pet.isHasVaccineCert(),
+                    adoptionPostRepository.existsByPet_Id(pet.getId())
             );
             petDTOS.add(petDTO);
         }

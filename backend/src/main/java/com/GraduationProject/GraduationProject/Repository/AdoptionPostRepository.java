@@ -23,5 +23,6 @@ public interface AdoptionPostRepository
 
     List<AdoptionPost> findPostsByUserId(Long userId);
     AdoptionPost findAdoptionPostByPetId(Long id);
+    boolean existsByPet_Id(Long petId);
 }
 

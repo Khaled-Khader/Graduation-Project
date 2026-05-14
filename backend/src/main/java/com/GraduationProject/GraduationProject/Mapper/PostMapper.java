@@ -48,7 +48,8 @@ public class PostMapper {
                 pet.getPhotoUrl(),
                 pet.getHealthStatus(),
                 pet.getGender(),
-                pet.isHasVaccineCert()
+                pet.isHasVaccineCert(),
+                true
         );
     }
 
@@ -81,6 +82,10 @@ public class PostMapper {
      * @return AdoptionPostDTO representing the post
      */
     public static AdoptionPostDTO toAdoptionPostDTO(AdoptionPost post) {
+        return toAdoptionPostDTO(post, false);
+    }
+
+    public static AdoptionPostDTO toAdoptionPostDTO(AdoptionPost post, boolean requestedByCurrentUser) {
         AdoptionPostDTO dto = new AdoptionPostDTO();
 
         dto.setId(post.getId());
@@ -91,6 +96,7 @@ public class PostMapper {
         dto.setPetDTO(toPetDTO(post.getPet()));
         dto.setCity(post.getCity());
         dto.setAdoptionStatus(post.getAdoptionStatus().name());
+        dto.setRequestedByCurrentUser(requestedByCurrentUser);
 
         return dto;
     }

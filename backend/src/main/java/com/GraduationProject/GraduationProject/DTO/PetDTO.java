@@ -1,5 +1,7 @@
 package com.GraduationProject.GraduationProject.DTO;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record PetDTO(
                     Long id,
                      String name,
@@ -8,5 +10,6 @@ public record PetDTO(
                      String photoUrl,
                      String healthStatus,
                      String gender,
-                     boolean hasVaccineCert) {
+                     boolean hasVaccineCert,
+                     @JsonProperty("isOnAdoptionPost") boolean onAdoptionPost) {
 }

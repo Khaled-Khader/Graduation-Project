@@ -9,16 +9,15 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tools.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.Map;
 
 /**
  * Controller for managing user profiles in PetNexus.
  *
- * Responsibilities:
- *  - Retrieve a user's profile (including pets, services, vet/clinic info)
- *  - Edit the authenticated user's profile
+ * Responsibilities: - Retrieve a user's profile (including pets, services,
+ * vet/clinic info) - Edit the authenticated user's profile
  */
 @RestController
 @RequestMapping("/user-profile")
@@ -30,15 +29,12 @@ public class UserProfileController {
         this.userProfileService = userProfileService;
     }
 
-
     /**
      * Retrieves the profile of a specific user.
      *
-     * The profile includes:
-     *  - Basic user info (name, bio, photo)
-     *  - Role-specific info (vet specialty or clinic details)
-     *  - List of pets
-     *  - List of services
+     * The profile includes: - Basic user info (name, bio, photo) -
+     * Role-specific info (vet specialty or clinic details) - List of pets -
+     * List of services
      *
      * @param userId ID of the user whose profile is requested
      * @return ProfileDTO containing all relevant profile information
@@ -48,7 +44,6 @@ public class UserProfileController {
         return userProfileService.getUserProfile(userId);
     }
 
-
     @GetMapping("/providers/search")
     public Page<ProviderSearchDTO> searchProviders(
             @RequestParam(defaultValue = "") String query,
@@ -57,17 +52,15 @@ public class UserProfileController {
         return userProfileService.searchProviders(query, pageable);
     }
 
-
     /**
-     * Updates the authenticated user's profile.
-     * Accepts a JSON payload with any of the following optional fields:
-     *  - firstName, lastName, bio, photoUrl
-     *  - specialty (for VET users)
-     *  - latitude, longitude, city, address (for CLINIC users)
+     * Updates the authenticated user's profile. Accepts a JSON payload with any
+     * of the following optional fields: - firstName, lastName, bio, photoUrl -
+     * specialty (for VET users) - latitude, longitude, city, address (for
+     * CLINIC users)
      *
-     * The service layer ensures:
-     *  - Only valid text and number fields are updated
-     *  - Role-specific fields are updated only if the user has the corresponding role
+     * The service layer ensures: - Only valid text and number fields are
+     * updated - Role-specific fields are updated only if the user has the
+     * corresponding role
      *
      * @param updates JSON payload with fields to update
      * @return ResponseEntity with success message or error details

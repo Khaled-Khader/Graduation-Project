@@ -3,13 +3,16 @@ package com.GraduationProject.GraduationProject.Service;
 import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.NotificationType;
 import com.GraduationProject.GraduationProject.Repository.ChatRepository;
 import com.GraduationProject.GraduationProject.Repository.MessageRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Security.UserPrinciple;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -25,26 +28,33 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Slf4j
 public class ChatService {
 
     private final ChatRepository chatRepository;
     private final MessageRepository messageRepository;
     private final UsersRepository usersRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationService notificationService;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final String E2EE_MESSAGE_PREFIX = "e2ee:v1:";
 
-    public ChatService(ChatRepository chatRepository, 
-                      MessageRepository messageRepository,
-                      UsersRepository usersRepository) {
+    public ChatService(ChatRepository chatRepository,
+            MessageRepository messageRepository,
+            UsersRepository usersRepository,
+            SimpMessagingTemplate messagingTemplate,
+            NotificationService notificationService) {
         this.chatRepository = chatRepository;
         this.messageRepository = messageRepository;
         this.usersRepository = usersRepository;
+        this.messagingTemplate = messagingTemplate;
+        this.notificationService = notificationService;
     }
 
     public ChatDTO startChat(StartChatDTO dto) {
         Users currentUser = getCurrentUser();
-        
+
         if (!currentUser.getRole().equals(EnumRole.OWNER)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only pet owners can start chats");
         }
@@ -74,12 +84,14 @@ public class ChatService {
         chat.setIsActive(true);
 
         Chat savedChat = chatRepository.save(chat);
-        return convertToDTO(savedChat);
+        ChatDTO chatDTO = convertToDTO(savedChat);
+        broadcastChatEvent("CHAT_STARTED", savedChat, chatDTO, null);
+        return chatDTO;
     }
 
     public MessageDTO sendMessage(SendMessageDTO dto) {
         Users currentUser = getCurrentUser();
-        
+
         Chat chat = chatRepository.findById(dto.getChatId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chat not found"));
 
@@ -115,7 +127,12 @@ public class ChatService {
         chat.setLastMessageAt(now);
         chatRepository.save(chat);
 
-        return convertMessageToDTO(savedMessage);
+        MessageDTO messageDTO = convertMessageToDTO(savedMessage);
+        ChatDTO chatDTO = convertToDTO(chat);
+        broadcastChatEvent("MESSAGE", chat, chatDTO, messageDTO);
+        notifyMessageRecipient(chat, currentUser);
+
+        return messageDTO;
     }
 
     public Page<ChatDTO> getUserChats(Pageable pageable) {
@@ -126,7 +143,7 @@ public class ChatService {
 
     public ChatDTO getChat(Long chatId, Pageable pageable) {
         Users currentUser = getCurrentUser();
-        
+
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chat not found"));
 
@@ -140,7 +157,7 @@ public class ChatService {
 
     public Page<MessageDTO> getChatMessages(Long chatId, Pageable pageable) {
         Users currentUser = getCurrentUser();
-        
+
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chat not found"));
 
@@ -173,7 +190,7 @@ public class ChatService {
 
     public void closeChat(Long chatId) {
         Users currentUser = getCurrentUser();
-        
+
         Chat chat = chatRepository.findById(chatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chat not found"));
 
@@ -202,7 +219,60 @@ public class ChatService {
     }
 
     private void markChatMessagesAsRead(Long chatId, Users currentUser) {
-        messageRepository.markChatMessagesAsRead(chatId, currentUser.getId(), LocalDateTime.now());
+        int updatedRows = messageRepository.markChatMessagesAsRead(chatId, currentUser.getId(), LocalDateTime.now());
+        if (updatedRows > 0) {
+            Long unreadCount = messageRepository.countUnreadMessagesForUser(currentUser);
+            ChatRealtimeEventDTO event = new ChatRealtimeEventDTO(
+                    "READ",
+                    chatId,
+                    null,
+                    null,
+                    unreadCount
+            );
+            sendToUser(currentUser, event);
+        }
+    }
+
+    private void broadcastChatEvent(String type, Chat chat, ChatDTO chatDTO, MessageDTO messageDTO) {
+        sendToUser(chat.getOwner(), new ChatRealtimeEventDTO(
+                type,
+                chat.getId(),
+                chatDTO,
+                messageDTO,
+                messageRepository.countUnreadMessagesForUser(chat.getOwner())
+        ));
+
+        sendToUser(chat.getProvider(), new ChatRealtimeEventDTO(
+                type,
+                chat.getId(),
+                chatDTO,
+                messageDTO,
+                messageRepository.countUnreadMessagesForUser(chat.getProvider())
+        ));
+    }
+
+    private void sendToUser(Users user, ChatRealtimeEventDTO event) {
+        messagingTemplate.convertAndSend("/topic/users/" + user.getId() + "/chats", event);
+    }
+
+    private void notifyMessageRecipient(Chat chat, Users sender) {
+        Users recipient = Objects.equals(sender.getId(), chat.getOwner().getId())
+                ? chat.getProvider()
+                : chat.getOwner();
+
+        try {
+            String displayName = getDisplayName(sender);
+            notificationService.createNotification(new CreateNotificationDTO(
+                    recipient.getId(),
+                    NotificationType.NEW_MESSAGE.name(),
+                    "💬 رسالة جديدة من " + displayName,
+                    "أرسل لك: رسالة خاصة جديدة",
+                    chat.getId(),
+                    Notification.RelatedEntityType.CHAT.name()
+            ));
+        } catch (Exception e) {
+            log.warn("Failed to create chat notification for user {}: {}", recipient.getId(), e.getMessage());
+        }
     }
 
     private boolean isEncryptedClientMessage(String content) {
@@ -243,13 +313,13 @@ public class ChatService {
 
     private ChatDTO convertToDTOWithMessages(Chat chat, Pageable pageable) {
         ChatDTO dto = convertToDTO(chat);
-        
+
         Page<Message> messages = messageRepository.findByChatIdOrderByCreatedAtAsc(chat.getId(), pageable);
         List<MessageDTO> messageDTOs = messages.getContent()
                 .stream()
                 .map(this::convertMessageToDTO)
                 .collect(Collectors.toList());
-        
+
         dto.setMessages(messageDTOs);
         return dto;
     }

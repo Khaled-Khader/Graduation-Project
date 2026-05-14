@@ -22,21 +22,16 @@ import org.springframework.web.cors.CorsConfigurationSource;
  *
  * This class configures Spring Security with:
  *
- *     JWT-based authentication
- *     Role-based access control for endpoints
- *     CORS configuration integration
- *     Stateless session management (no HTTP session)
+ * JWT-based authentication Role-based access control for endpoints CORS
+ * configuration integration Stateless session management (no HTTP session)
  *
  *
  *
  * Endpoints are secured based on user roles:
  *
- *     CLINIC → /clinic/**
- *     VET → /vet/**
- *     ADMIN → /admin/**
- *     OWNER → /owner/**
- *     CLINIC, VET, OWNER → /pet/**, /service/**, /post/**
- *     Public → /users/register, /users/login, /users/auth
+ * CLINIC → /clinic/** VET → /vet/** ADMIN → /admin/** OWNER → /owner/** CLINIC,
+ * VET, OWNER → /pet/**, /service/**, /post/** Public → /users/register,
+ * /users/login, /users/auth
  *
  *
  */
@@ -58,12 +53,11 @@ public class SecurityConfig {
      *
      * This includes:
      *
-     *      CSRF protection (not needed for stateless JWT)
-     *     Integrating CORS configuration
-     *     Registering a DAO-based authentication provider with BCrypt password encoder
-     *     Setting endpoint authorization rules based on roles
-     *     Adding JWTFilter before UsernamePasswordAuthenticationFilter
-     *     Setting session management to stateless
+     * CSRF protection (not needed for stateless JWT) Integrating CORS
+     * configuration Registering a DAO-based authentication provider with BCrypt
+     * password encoder Setting endpoint authorization rules based on roles
+     * Adding JWTFilter before UsernamePasswordAuthenticationFilter Setting
+     * session management to stateless
      *
      *
      *
@@ -74,43 +68,46 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   CorsConfigurationSource corsConfigurationSource) throws Exception {
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable()) // Disable CSRF (JWT used instead)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource)) // Apply CORS
                 .authenticationProvider(authenticationProvider()) // Set DAO-based authentication
-                .authorizeHttpRequests(authorizeRequests ->
-                        authorizeRequests
-                                // Public endpoints
-                                .requestMatchers("/users/register", "/users/login", "/users/auth").permitAll()
-                                // Role-based access control
-                                .requestMatchers("/clinic/**").hasRole("CLINIC")
-                                .requestMatchers("/vet/**").hasRole("VET")
-                                .requestMatchers("/admin/**").hasRole("ADMIN")
-                                .requestMatchers("/owner/**").hasRole("OWNER")
-                                .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET", "OWNER")
-                                .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET", "OWNER")
-                                .requestMatchers("/post/**").hasAnyRole("CLINIC", "VET", "OWNER")
-                                .requestMatchers("/chat/**").hasAnyRole("CLINIC", "VET", "OWNER")
-                                // Any other requests must be authenticated
-                                .anyRequest().authenticated())
+                .authorizeHttpRequests(authorizeRequests
+                        -> authorizeRequests
+                        // Public endpoints
+                        .requestMatchers("/users/register", "/users/login", "/users/auth").permitAll()
+                        // Role-based access control
+                        .requestMatchers("/clinic/**").hasRole("CLINIC")
+                        .requestMatchers("/vet/**").hasRole("VET")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/owner/**").hasRole("OWNER")
+                        .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/post/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/chat/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/notifications/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/ws", "/ws/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        // Any other requests must be authenticated
+                        .anyRequest().authenticated())
                 // Stateless session: do not use HTTP session
-                .sessionManagement(sessionManagement ->
-                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sessionManagement
+                        -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Add JWTFilter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     /**
-     * Configures a DAO authentication provider using the UserDetailsService
-     * and BCrypt password encoder.
+     * Configures a DAO authentication provider using the UserDetailsService and
+     * BCrypt password encoder.
      *
      * @return AuthenticationProvider
      */
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
+        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
         return authenticationProvider;
     }

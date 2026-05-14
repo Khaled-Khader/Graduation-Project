@@ -12,15 +12,15 @@ import java.util.List;
 /**
  * Global CORS configuration.
  *
- * Enables secure cross-origin requests between the frontend
- * (React / Vite) and the backend (Spring Boot API),
- * including support for HttpOnly cookies.
+ * Enables secure cross-origin requests between the frontend (React / Vite) and
+ * the backend (Spring Boot API), including support for HttpOnly cookies.
  */
 @Configuration
 public class CorsConfig {
 
     @Value("${frontend.url}")
     private String frontendUrl;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -31,6 +31,10 @@ public class CorsConfig {
         // 🌍 Allowed frontend origins
         config.setAllowedOrigins(List.of(
                 frontendUrl,
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:5174",
                 "https://pet-nexus.vercel.app"
         ));
 

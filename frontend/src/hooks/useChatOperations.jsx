@@ -24,7 +24,6 @@ export function useChatOperations() {
       return http("/chat/my-chats?page=0&size=20");
     },
     enabled: !!user,
-    refetchInterval: 5000,
   });
 
   // Fetch specific chat with messages
@@ -40,7 +39,6 @@ export function useChatOperations() {
       return http(`/chat/${selectedChat.id}?page=0&size=50`);
     },
     enabled: !!selectedChat?.id,
-    refetchInterval: selectedChat?.id ? 3000 : false,
   });
 
   // Start new chat mutation

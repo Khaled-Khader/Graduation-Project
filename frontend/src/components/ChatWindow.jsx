@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  LockKeyhole,
+  MessageCircle,
+  Send,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { useAuth } from "../Auth/AuthHook";
 import { decryptChatMessage, encryptChatMessage } from "../util/chatCrypto";
 
@@ -12,6 +19,7 @@ export default function ChatWindow({
   onClose,
 }) {
   const { user } = useAuth();
+  const messagesEndRef = useRef(null);
   const [messageInput, setMessageInput] = useState("");
   const [visibleMessages, setVisibleMessages] = useState([]);
   const [sendError, setSendError] = useState("");
@@ -42,6 +50,13 @@ export default function ChatWindow({
     };
   }, [activeChat]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: visibleMessages.length > 1 ? "smooth" : "auto",
+      block: "end",
+    });
+  }, [visibleMessages.length, activeChat?.id]);
+
   const otherUser = useMemo(
     () =>
       user?.role === "OWNER"
@@ -60,8 +75,8 @@ export default function ChatWindow({
     [activeChat, user?.role]
   );
 
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
+  const handleSendMessage = async (event) => {
+    event.preventDefault();
     const trimmedMessage = messageInput.trim();
     if (!trimmedMessage || !activeChat?.isActive) {
       return;
@@ -80,107 +95,139 @@ export default function ChatWindow({
     }
   };
 
+  function handleComposerKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  }
+
   if (chatLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-[#B8C4FF]">Loading chat...</div>
+      <div className="flex h-full items-center justify-center rounded-2xl border border-[#6B8CFF]/25 bg-[#0F1538]">
+        <div className="text-sm text-[#B8C4FF]">Loading chat...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#0F1538] rounded-2xl border border-[#6B8CFF]/25">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[#6B8CFF]/25">
-        <div className="flex items-center gap-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#6B8CFF]/25 bg-[#0F1538]">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#6B8CFF]/25 px-3 py-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-[#B8C4FF] transition hover:bg-[#6B8CFF]/10 lg:hidden"
+            aria-label="Back to chats"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+
           {otherUser?.image ? (
             <img
               src={otherUser.image}
               alt={otherUser.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className="h-10 w-10 shrink-0 rounded-full object-cover"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-[#6B8CFF]/30 flex items-center justify-center">
-              <MessageCircle className="w-6 h-6 text-[#6B8CFF]" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#6B8CFF]/30">
+              <MessageCircle className="h-6 w-6 text-[#6B8CFF]" />
             </div>
           )}
-          <div>
-            <h3 className="text-[#E6ECFF] font-semibold">{otherUser?.name}</h3>
-            <p className="text-xs text-[#9AA6E8]">
-              {otherUser?.role}
-            </p>
+
+          <div className="min-w-0">
+            <h3 className="truncate font-semibold text-[#E6ECFF]">
+              {otherUser?.name || "Chat"}
+            </h3>
+            <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
+              <span className="text-xs text-[#9AA6E8]">{otherUser?.role}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
+                <LockKeyhole className="h-3 w-3" />
+                E2E encrypted
+              </span>
+            </div>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-[#6B8CFF]/10 rounded-lg transition"
-        >
-          <X className="w-5 h-5 text-[#B8C4FF]" />
-        </button>
-      </div>
 
-      {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className="hidden rounded-lg p-2 text-[#B8C4FF] transition hover:bg-[#6B8CFF]/10 lg:block"
+          aria-label="Close chat"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
+        <div className="mx-auto mb-5 flex max-w-md items-center justify-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-center text-xs text-emerald-100">
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          Messages are encrypted on this device before sending.
+        </div>
+
         {visibleMessages.length > 0 ? (
-          visibleMessages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.senderId === user?.id
-                  ? "justify-end"
-                  : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-xl ${
-                  message.senderId === user?.id
-                    ? "bg-[#6B8CFF] text-white"
-                    : "bg-[#1a2452] text-[#E6ECFF] border border-[#6B8CFF]/25"
-                }`}
-              >
-                <p className="break-words">{message.decryptedContent}</p>
-                <p
-                  className={`text-xs mt-1 ${
-                    message.senderId === user?.id
-                      ? "text-blue-200"
-                      : "text-[#9AA6E8]"
-                  }`}
+          <div className="space-y-3">
+            {visibleMessages.map((message) => {
+              const isMine = message.senderId === user?.id;
+
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                 >
-                  {new Date(message.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-            </div>
-          ))
+                  <div
+                    className={`max-w-[82%] rounded-2xl px-4 py-2.5 shadow-sm sm:max-w-[68%] ${
+                      isMine
+                        ? "rounded-br-md bg-[#6B8CFF] text-white"
+                        : "rounded-bl-md border border-[#6B8CFF]/25 bg-[#1a2452] text-[#E6ECFF]"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                      {message.decryptedContent}
+                    </p>
+                    <p
+                      className={`mt-1 text-right text-[11px] ${
+                        isMine ? "text-blue-100" : "text-[#9AA6E8]"
+                      }`}
+                    >
+                      {new Date(message.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-[#9AA6E8] text-sm">No messages yet</p>
+          <div className="flex h-[60%] items-center justify-center">
+            <div className="text-center">
+              <MessageCircle className="mx-auto mb-3 h-12 w-12 text-[#6B8CFF]/45" />
+              <p className="text-sm text-[#9AA6E8]">No messages yet</p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Message Input */}
       <form
         onSubmit={handleSendMessage}
-        className="p-4 border-t border-[#6B8CFF]/25"
+        className="shrink-0 border-t border-[#6B8CFF]/25 bg-[#0F1538] p-3 sm:p-4"
       >
         {!activeChat?.isActive && (
-          <p className="text-sm text-[#9AA6E8] mb-3">
-            This chat is closed.
-          </p>
+          <p className="mb-3 text-sm text-[#9AA6E8]">This chat is closed.</p>
         )}
-        {sendError && (
-          <p className="text-sm text-red-300 mb-3">{sendError}</p>
-        )}
-        <div className="flex gap-2">
-          <input
-            type="text"
+        {sendError && <p className="mb-3 text-sm text-red-300">{sendError}</p>}
+
+        <div className="flex items-end gap-2">
+          <textarea
+            rows={1}
             value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
+            onChange={(event) => setMessageInput(event.target.value)}
+            onKeyDown={handleComposerKeyDown}
             placeholder="Type a message..."
-            className="flex-1 bg-[#1a2452] border border-[#6B8CFF]/25 rounded-xl px-4 py-2 text-[#E6ECFF] placeholder-[#9AA6E8] focus:outline-none focus:border-[#6B8CFF]/50 transition"
+            className="max-h-28 min-h-11 flex-1 resize-none rounded-xl border border-[#6B8CFF]/25 bg-[#1a2452] px-4 py-2.5 text-sm text-[#E6ECFF] placeholder-[#9AA6E8] outline-none transition focus:border-[#6B8CFF]/60"
             disabled={sendMessageLoading || !activeChat?.isActive}
           />
           <button
@@ -188,9 +235,10 @@ export default function ChatWindow({
             disabled={
               sendMessageLoading || !messageInput.trim() || !activeChat?.isActive
             }
-            className="bg-[#6B8CFF] hover:bg-[#6B8CFF]/80 text-white rounded-xl p-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#6B8CFF] text-white transition hover:bg-[#6B8CFF]/80 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Send message"
           >
-            <Send className="w-5 h-5" />
+            <Send className="h-5 w-5" />
           </button>
         </div>
       </form>

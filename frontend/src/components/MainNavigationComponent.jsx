@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { http, LogoutFetchData } from "../util/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../Auth/AuthHook";
+import { useChatSocket } from "../hooks/useChatSocket";
 import {
   HouseHeart,
   PawPrint,
@@ -15,6 +16,7 @@ import {
   Building2,
 } from "lucide-react";
 import LogoutDialog from "../components/posts/dialogs/LogoutDialog"; // <-- import the dialog
+import NotificationBell from "./NotificationBell";
 
 export default function MainNavigation() {
   const { user } = useAuth();
@@ -22,6 +24,8 @@ export default function MainNavigation() {
   const queryClient = useQueryClient();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [providerSearch, setProviderSearch] = useState("");
+
+  useChatSocket(user);
 
   const base =
     "flex items-center gap-2 px-3 py-2 rounded-full transition-all text-sm transform duration-150 ease-out active:scale-95 whitespace-nowrap";
@@ -45,7 +49,6 @@ export default function MainNavigation() {
     queryKey: ["chatUnreadCount"],
     queryFn: () => http("/chat/unread-total"),
     enabled: !!user,
-    refetchInterval: 5000,
   });
 
   const trimmedProviderSearch = providerSearch.trim();
@@ -247,6 +250,8 @@ export default function MainNavigation() {
               </span>
               <span className="hidden sm:inline">Chat</span>
             </NavLink>
+
+            <NotificationBell userId={user?.id} />
 
             <NavLink
               to={`/app/profile/${user.id}`}

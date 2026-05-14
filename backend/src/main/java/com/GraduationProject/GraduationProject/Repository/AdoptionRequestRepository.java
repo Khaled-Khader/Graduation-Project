@@ -46,13 +46,14 @@ public interface AdoptionRequestRepository
     @Modifying
     @Query("""
         UPDATE AdoptionRequest ar
-        SET ar.status = 'REJECTED'
+        SET ar.status = :rejectedStatus
         WHERE ar.adoptionPost.id = :postId
           AND ar.id <> :acceptedRequestId
     """)
     void rejectAllExcept(
             @Param("postId") Long postId,
-            @Param("acceptedRequestId") Long acceptedRequestId
+            @Param("acceptedRequestId") Long acceptedRequestId,
+            @Param("rejectedStatus") AdoptionRequestStatus rejectedStatus
     );
 
     // =================================================
@@ -61,11 +62,13 @@ public interface AdoptionRequestRepository
     @Modifying
     @Query("""
         UPDATE AdoptionRequest ar
-        SET ar.status = 'REJECTED'
+        SET ar.status = :rejectedStatus
         WHERE ar.adoptionPost.id = :postId
-          AND ar.status = 'PENDING'
+          AND ar.status = :pendingStatus
     """)
     void rejectAllPending(
-            @Param("postId") Long postId
+            @Param("postId") Long postId,
+            @Param("pendingStatus") AdoptionRequestStatus pendingStatus,
+            @Param("rejectedStatus") AdoptionRequestStatus rejectedStatus
     );
 }

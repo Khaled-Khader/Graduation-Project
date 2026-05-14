@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import { useAuth } from '../Auth/AuthHook';
+import { http } from '../util/http';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -88,39 +90,47 @@ const SearchBar = ({ onSearch }) => {
 
 export default function MapPage() {
     const [position, setPosition] = useState([32.5514, 35.8515]);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState("");
+    const [saveError, setSaveError] = useState("");
+    const { user } = useAuth();
 
-    const handleSaveLocation = () => {
+    const handleSaveLocation = async () => {
+        setSaveMessage("");
+        setSaveError("");
+
+        if (user?.role !== "CLINIC") {
+            setSaveError("Only clinic accounts can save clinic locations.");
+            return;
+        }
+
         const payload = {
             latitude: position[0],
             longitude: position[1]
         };
 
-        const clinicId = localStorage.getItem('clinicId');
+        const clinicId = user?.id;
 
-        if (!clinicId || clinicId === 'null') {
-            alert('Error: No clinic ID found. Please log in again.');
-            return; 
+        if (!clinicId) {
+            setSaveError("No clinic account was found. Please sign in again.");
+            return;
         }
 
-        fetch(`http://localhost:8080/api/clinics/${clinicId}/location`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(payload)
-        })
-        .then(response => {
-            if (response.ok) {
-                alert('Coordinates saved successfully!');
-            } else {
-                alert('Error saving location. Please ensure you are logged in.');
-            }
-        })
-        .catch(err => {
+        setIsSaving(true);
+
+        try {
+            await http(`/api/clinics/${clinicId}/location`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+
+            setSaveMessage("Clinic location saved successfully.");
+        } catch (err) {
             console.error("Error:", err);
-            alert('Unable to connect to the server. Please check your connection.');
-        });
+            setSaveError(err.message || "Unable to save location. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -152,10 +162,19 @@ export default function MapPage() {
 
                 <button 
                     onClick={handleSaveLocation}
-                    className="mt-4 w-full sm:w-auto px-10 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition"
+                    disabled={isSaving}
+                    className="mt-4 w-full sm:w-auto px-10 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    Save Location
+                    {isSaving ? "Saving..." : "Save Location"}
                 </button>
+
+                {saveMessage && (
+                    <p className="text-sm font-semibold text-green-700">{saveMessage}</p>
+                )}
+
+                {saveError && (
+                    <p className="text-sm font-semibold text-red-600">{saveError}</p>
+                )}
             </div>
 
         </div>

@@ -163,7 +163,13 @@ export async function http(url, options = {}) {
         return null;
     }
 
-    return response.json();
+    const contentType = response.headers.get("content-type") || "";
+
+    if (contentType.includes("application/json")) {
+        return response.json();
+    }
+
+    return response.text();
 }
 
 export async function createRegularPost({ content, imageUrl }) {

@@ -35,8 +35,6 @@ export default function SignUpPage() {
     const [specialty, setSpecialty] = useState("");
 
     // Clinic Info
-    const [latitude, setLatitude] = useState("");
-    const [longitude, setLongitude] = useState("");
     const [city, setCity] = useState("");
     const [address, setAddress] = useState("");
 
@@ -54,8 +52,6 @@ export default function SignUpPage() {
     else if (roleId === "3")
         {content = (
             <ClinicSignupPageComponent
-                latitude={latitude} setLatitude={setLatitude}
-                longitude={longitude} setLongitude={setLongitude}
                 city={city} setCity={setCity}
                 address={address} setAddress={setAddress}
             />
@@ -112,7 +108,7 @@ export default function SignUpPage() {
             role: roleId === "1" ? "OWNER" : roleId === "2" ? "VET" : roleId === "3" ? "CLINIC" : null,
             userInfoDTO: { firstName, lastName, bio,photoUrl },
             vetDTO: roleId === "2" ? { specialty } : null,
-            clinicDTO: roleId === "3" ? { latitude, longitude, city, address } : null,
+            clinicDTO: roleId === "3" ? { city, address } : null,
         };
 
         register.mutate(dto, {

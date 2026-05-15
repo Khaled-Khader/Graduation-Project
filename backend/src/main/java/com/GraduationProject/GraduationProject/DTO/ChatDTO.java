@@ -33,6 +33,8 @@ public class ChatDTO {
 
     private Boolean isActive;
 
+    private Long unreadCount;
+
     private List<MessageDTO> messages;
 
 }

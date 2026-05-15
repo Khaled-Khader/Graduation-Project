@@ -102,7 +102,6 @@ CREATE TABLE `clinic` (
 
 LOCK TABLES `clinic` WRITE;
 /*!40000 ALTER TABLE `clinic` DISABLE KEYS */;
-INSERT INTO `clinic` VALUES (1,'Irbid','Irbid',32.54746433163718,35.85697174072266),(2,'Irbid','Irbid',32.48637963013472,35.99215507507325),(3,'Irbid','Irbid',32.46918302793641,36.05828762054444);
 /*!40000 ALTER TABLE `clinic` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -188,7 +187,6 @@ CREATE TABLE `pet_owner` (
 
 LOCK TABLES `pet_owner` WRITE;
 /*!40000 ALTER TABLE `pet_owner` DISABLE KEYS */;
-INSERT INTO `pet_owner` VALUES (4);
 /*!40000 ALTER TABLE `pet_owner` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -298,7 +296,6 @@ CREATE TABLE `user_profile` (
 
 LOCK TABLES `user_profile` WRITE;
 /*!40000 ALTER TABLE `user_profile` DISABLE KEYS */;
-INSERT INTO `user_profile` VALUES (1,'','clinic','test','https://res.cloudinary.com/di1xpud7d/image/upload/v1767881554/clinic_d2jav0.jpg'),(2,'','clinicOne','test','https://res.cloudinary.com/di1xpud7d/image/upload/v1767881554/clinic_d2jav0.jpg'),(3,'','clinicTwo','test','https://res.cloudinary.com/di1xpud7d/image/upload/v1767881554/clinic_d2jav0.jpg'),(4,'','owner','test','https://res.cloudinary.com/di1xpud7d/image/upload/v1767881569/owner_qazol0.jpg');
 /*!40000 ALTER TABLE `user_profile` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -316,7 +313,7 @@ CREATE TABLE `users` (
   `role` enum('ADMIN','CLINIC','OWNER','VET') DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK6dotkott2kjsp8vw4d0m25fb7` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -325,7 +322,6 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'clinic@gmail.com','$2a$10$OAFoL6B7zjVHxkp9aDn7BOmgT2k5DqkN6mmB2/d/M6iPD6gcZWUG2','CLINIC'),(2,'clinic1@gmail.com','$2a$10$a.E9.FiFQEyQTYu6HCVQ4u30l6ng0LuV70OVO8RTZDEcB73XA/u1q','CLINIC'),(3,'clinic2@gmail.com','$2a$10$qXLYfj0IuXKLrlEhA0FGL.BfLyQ9jZtwBQmkfTv1UazEBqjtENfR6','CLINIC'),(4,'owner@gmail.com','$2a$10$G5/OsS56rfj/7rDph6pWYeTCrIZKg/4aZKhFNnD2yQslAUoevraXO','OWNER');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 

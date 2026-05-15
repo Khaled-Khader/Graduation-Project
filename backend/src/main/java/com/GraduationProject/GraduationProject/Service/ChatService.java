@@ -76,7 +76,7 @@ public class ChatService {
 
         Optional<Chat> existingChat = chatRepository.findChatBetween(currentUser, provider);
         if (existingChat.isPresent()) {
-            return convertToDTO(existingChat.get());
+            return convertToDTO(existingChat.get(), currentUser);
         }
 
         Chat chat = new Chat();
@@ -88,8 +88,8 @@ public class ChatService {
         chat.setIsActive(true);
 
         Chat savedChat = chatRepository.save(chat);
-        ChatDTO chatDTO = convertToDTO(savedChat);
-        broadcastChatEvent("CHAT_STARTED", savedChat, chatDTO, null);
+        ChatDTO chatDTO = convertToDTO(savedChat, currentUser);
+        broadcastChatEvent("CHAT_STARTED", savedChat, null);
         return chatDTO;
     }
 
@@ -146,8 +146,7 @@ public class ChatService {
         chatRepository.save(chat);
 
         MessageDTO messageDTO = convertMessageToDTO(savedMessage);
-        ChatDTO chatDTO = convertToDTO(chat);
-        broadcastChatEvent("MESSAGE", chat, chatDTO, messageDTO);
+        broadcastChatEvent("MESSAGE", chat, messageDTO);
         notifyMessageRecipient(chat, currentUser);
 
         return messageDTO;
@@ -172,7 +171,7 @@ public class ChatService {
     public Page<ChatDTO> getUserChats(Pageable pageable) {
         Users currentUser = getCurrentUser();
         Page<Chat> chats = chatRepository.findUserChats(currentUser, pageable);
-        return chats.map(this::convertToDTO);
+        return chats.map(chat -> convertToDTO(chat, currentUser));
     }
 
     public ChatDTO getChat(Long chatId, Pageable pageable) {
@@ -186,7 +185,7 @@ public class ChatService {
         }
 
         markChatMessagesAsRead(chatId, currentUser);
-        return convertToDTOWithMessages(chat, pageable);
+        return convertToDTOWithMessages(chat, pageable, currentUser);
     }
 
     public Page<MessageDTO> getChatMessages(Long chatId, Pageable pageable) {
@@ -267,11 +266,11 @@ public class ChatService {
         }
     }
 
-    private void broadcastChatEvent(String type, Chat chat, ChatDTO chatDTO, MessageDTO messageDTO) {
+    private void broadcastChatEvent(String type, Chat chat, MessageDTO messageDTO) {
         sendToUser(chat.getOwner(), new ChatRealtimeEventDTO(
                 type,
                 chat.getId(),
-                chatDTO,
+                convertToDTO(chat, chat.getOwner()),
                 messageDTO,
                 messageRepository.countUnreadMessagesForUser(chat.getOwner())
         ));
@@ -279,7 +278,7 @@ public class ChatService {
         sendToUser(chat.getProvider(), new ChatRealtimeEventDTO(
                 type,
                 chat.getId(),
-                chatDTO,
+                convertToDTO(chat, chat.getProvider()),
                 messageDTO,
                 messageRepository.countUnreadMessagesForUser(chat.getProvider())
         ));
@@ -320,7 +319,7 @@ public class ChatService {
                 && !parts[3].isBlank();
     }
 
-    private ChatDTO convertToDTO(Chat chat) {
+    private ChatDTO convertToDTO(Chat chat, Users currentUser) {
         Users provider = chat.getProvider();
         Users owner = chat.getOwner();
 
@@ -341,12 +340,13 @@ public class ChatService {
         dto.setCreatedAt(chat.getCreatedAt().format(FORMATTER));
         dto.setLastMessageAt(chat.getLastMessageAt() != null ? chat.getLastMessageAt().format(FORMATTER) : null);
         dto.setIsActive(chat.getIsActive());
+        dto.setUnreadCount(resolveUnreadCount(chat, currentUser));
 
         return dto;
     }
 
-    private ChatDTO convertToDTOWithMessages(Chat chat, Pageable pageable) {
-        ChatDTO dto = convertToDTO(chat);
+    private ChatDTO convertToDTOWithMessages(Chat chat, Pageable pageable, Users currentUser) {
+        ChatDTO dto = convertToDTO(chat, currentUser);
 
         Page<Message> messages = messageRepository.findByChatIdOrderByCreatedAtAsc(chat.getId(), pageable);
         List<MessageDTO> messageDTOs = messages.getContent()
@@ -356,6 +356,19 @@ public class ChatService {
 
         dto.setMessages(messageDTOs);
         return dto;
+    }
+
+    private Long resolveUnreadCount(Chat chat, Users currentUser) {
+        if (currentUser == null || currentUser.getId() == null) {
+            return 0L;
+        }
+
+        Long unreadCount = messageRepository.countByChat_IdAndIsReadFalseAndSender_IdNot(
+                chat.getId(),
+                currentUser.getId()
+        );
+
+        return unreadCount != null ? unreadCount : 0L;
     }
 
     private MessageDTO convertMessageToDTO(Message message) {

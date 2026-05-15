@@ -94,9 +94,33 @@ export function useChatOperations() {
 
   useEffect(() => {
     if (chatData?.id) {
+      queryClient.setQueryData(["userChats"], (previousChats) => {
+        if (!previousChats?.content) {
+          return previousChats;
+        }
+
+        return {
+          ...previousChats,
+          content: previousChats.content.map((chat) =>
+            chat.id === chatData.id
+              ? {
+                  ...chat,
+                  unreadCount: chatData.unreadCount ?? 0,
+                  lastMessageAt: chatData.lastMessageAt ?? chat.lastMessageAt,
+                }
+              : chat
+          ),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["chatUnreadCount"] });
     }
-  }, [chatData?.id, chatData?.messages?.length, queryClient]);
+  }, [
+    chatData?.id,
+    chatData?.lastMessageAt,
+    chatData?.messages?.length,
+    chatData?.unreadCount,
+    queryClient,
+  ]);
 
   return {
     chats: chatsData?.content || [],

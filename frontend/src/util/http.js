@@ -184,6 +184,24 @@ export async function http(url, options = {}) {
     return response.text();
 }
 
+export async function uploadChatImage(chatId, file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${BASE_URL}/chat/${chatId}/image`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to upload image");
+    }
+
+    return response.json();
+}
+
 export async function createRegularPost({ content, imageUrl }) {
     const response = await fetch(`${BASE_URL}/post/regular`, {
         method: "POST",

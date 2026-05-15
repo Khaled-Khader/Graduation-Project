@@ -33,8 +33,11 @@ public class Message {
     @JoinColumn(name = "sender_id", nullable = false)
     private Users sender;
 
-    @Column(name = "content", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content; // Encrypted message content
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

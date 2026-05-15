@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
+  ImagePlus,
+  Loader2,
   LockKeyhole,
   MessageCircle,
   Send,
@@ -9,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../Auth/AuthHook";
 import { decryptChatMessage, encryptChatMessage } from "../util/chatCrypto";
+import { uploadChatImage } from "../util/http";
 
 export default function ChatWindow({
   chat,
@@ -19,12 +22,17 @@ export default function ChatWindow({
   onClose,
 }) {
   const { user } = useAuth();
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [messageInput, setMessageInput] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [visibleMessages, setVisibleMessages] = useState([]);
   const [sendError, setSendError] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const activeChat = currentChat || chat;
+  const isSending = sendMessageLoading || isUploadingImage;
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +42,9 @@ export default function ChatWindow({
       const decryptedMessages = await Promise.all(
         messages.map(async (message) => ({
           ...message,
-          decryptedContent: await decryptChatMessage(activeChat, message.content),
+          decryptedContent: message.content
+            ? await decryptChatMessage(activeChat, message.content)
+            : "",
         }))
       );
 
@@ -57,6 +67,18 @@ export default function ChatWindow({
     });
   }, [visibleMessages.length, activeChat?.id]);
 
+  useEffect(() => {
+    if (!selectedImage) {
+      setImagePreviewUrl("");
+      return undefined;
+    }
+
+    const previewUrl = URL.createObjectURL(selectedImage);
+    setImagePreviewUrl(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedImage]);
+
   const otherUser = useMemo(
     () =>
       user?.role === "OWNER"
@@ -75,23 +97,67 @@ export default function ChatWindow({
     [activeChat, user?.role]
   );
 
+  function clearSelectedImage() {
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }
+
+  function handleSelectImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setSendError("Please choose an image file.");
+      clearSelectedImage();
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setSendError("Image must be smaller than 8MB.");
+      clearSelectedImage();
+      return;
+    }
+
+    setSendError("");
+    setSelectedImage(file);
+  }
+
   const handleSendMessage = async (event) => {
     event.preventDefault();
+
     const trimmedMessage = messageInput.trim();
-    if (!trimmedMessage || !activeChat?.isActive) {
+    if ((!trimmedMessage && !selectedImage) || !activeChat?.isActive) {
       return;
     }
 
     try {
       setSendError("");
-      const encryptedMessage = await encryptChatMessage(activeChat, trimmedMessage);
-      sendMessage(encryptedMessage, {
-        onSuccess: () => setMessageInput(""),
+      const payload = {};
+
+      if (trimmedMessage) {
+        payload.content = await encryptChatMessage(activeChat, trimmedMessage);
+      }
+
+      if (selectedImage) {
+        setIsUploadingImage(true);
+        const uploadResult = await uploadChatImage(activeChat.id, selectedImage);
+        payload.imageUrl = uploadResult.imageUrl;
+      }
+
+      sendMessage(payload, {
+        onSuccess: () => {
+          setMessageInput("");
+          clearSelectedImage();
+        },
         onError: (error) =>
           setSendError(error?.message || "Failed to send message"),
       });
-    } catch {
-      setSendError("Could not encrypt this message");
+    } catch (error) {
+      setSendError(error?.message || "Could not send this message");
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -143,7 +209,7 @@ export default function ChatWindow({
               <span className="text-xs text-[#9AA6E8]">{otherUser?.role}</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">
                 <LockKeyhole className="h-3 w-3" />
-                E2E encrypted
+                Text encrypted
               </span>
             </div>
           </div>
@@ -162,13 +228,15 @@ export default function ChatWindow({
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5">
         <div className="mx-auto mb-5 flex max-w-md items-center justify-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-center text-xs text-emerald-100">
           <ShieldCheck className="h-4 w-4 shrink-0" />
-          Messages are encrypted on this device before sending.
+          Text is encrypted on this device before sending.
         </div>
 
         {visibleMessages.length > 0 ? (
           <div className="space-y-3">
             {visibleMessages.map((message) => {
               const isMine = message.senderId === user?.id;
+              const hasImage = Boolean(message.imageUrl);
+              const hasText = Boolean(message.decryptedContent);
 
               return (
                 <div
@@ -176,17 +244,40 @@ export default function ChatWindow({
                   className={`flex ${isMine ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[82%] rounded-2xl px-4 py-2.5 shadow-sm sm:max-w-[68%] ${
+                    className={`max-w-[86%] rounded-2xl p-2 shadow-sm sm:max-w-[70%] ${
                       isMine
                         ? "rounded-br-md bg-[#6B8CFF] text-white"
                         : "rounded-bl-md border border-[#6B8CFF]/25 bg-[#1a2452] text-[#E6ECFF]"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
-                      {message.decryptedContent}
-                    </p>
+                    {hasImage && (
+                      <a
+                        href={message.imageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block overflow-hidden rounded-xl bg-black/20"
+                      >
+                        <img
+                          src={message.imageUrl}
+                          alt="Chat attachment"
+                          loading="lazy"
+                          className="max-h-[360px] w-full min-w-[180px] max-w-[360px] rounded-xl object-contain"
+                        />
+                      </a>
+                    )}
+
+                    {hasText && (
+                      <p
+                        className={`whitespace-pre-wrap break-words text-sm leading-relaxed ${
+                          hasImage ? "px-2 pt-2" : "px-2 py-0.5"
+                        }`}
+                      >
+                        {message.decryptedContent}
+                      </p>
+                    )}
+
                     <p
-                      className={`mt-1 text-right text-[11px] ${
+                      className={`px-2 pb-0.5 pt-1 text-right text-[11px] ${
                         isMine ? "text-blue-100" : "text-[#9AA6E8]"
                       }`}
                     >
@@ -220,25 +311,77 @@ export default function ChatWindow({
         )}
         {sendError && <p className="mb-3 text-sm text-red-300">{sendError}</p>}
 
+        {imagePreviewUrl && (
+          <div className="mb-3 inline-flex max-w-full items-start gap-2 rounded-xl border border-[#6B8CFF]/25 bg-[#1a2452] p-2">
+            <img
+              src={imagePreviewUrl}
+              alt="Selected attachment"
+              className="h-20 w-20 rounded-lg object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-[#E6ECFF]">
+                {selectedImage?.name}
+              </p>
+              <p className="text-xs text-[#9AA6E8]">
+                {selectedImage ? `${Math.ceil(selectedImage.size / 1024)} KB` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={clearSelectedImage}
+              disabled={isSending}
+              className="rounded-lg p-1.5 text-[#B8C4FF] transition hover:bg-white/10"
+              aria-label="Remove selected image"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleSelectImage}
+            disabled={isSending || !activeChat?.isActive}
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSending || !activeChat?.isActive}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#6B8CFF]/25 bg-[#1a2452] text-[#B8C4FF] transition hover:border-[#6B8CFF]/50 hover:bg-[#22306b] disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Attach image"
+          >
+            <ImagePlus className="h-5 w-5" />
+          </button>
+
           <textarea
             rows={1}
             value={messageInput}
             onChange={(event) => setMessageInput(event.target.value)}
             onKeyDown={handleComposerKeyDown}
-            placeholder="Type a message..."
+            placeholder={selectedImage ? "Add a caption..." : "Type a message..."}
             className="max-h-28 min-h-11 flex-1 resize-none rounded-xl border border-[#6B8CFF]/25 bg-[#1a2452] px-4 py-2.5 text-sm text-[#E6ECFF] placeholder-[#9AA6E8] outline-none transition focus:border-[#6B8CFF]/60"
-            disabled={sendMessageLoading || !activeChat?.isActive}
+            disabled={isSending || !activeChat?.isActive}
           />
           <button
             type="submit"
             disabled={
-              sendMessageLoading || !messageInput.trim() || !activeChat?.isActive
+              isSending ||
+              (!messageInput.trim() && !selectedImage) ||
+              !activeChat?.isActive
             }
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#6B8CFF] text-white transition hover:bg-[#6B8CFF]/80 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Send message"
           >
-            <Send className="h-5 w-5" />
+            {isSending ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
           </button>
         </div>
       </form>

@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Controller for managing private chats between pet owners and providers
@@ -52,6 +54,14 @@ public class ChatController {
     @PostMapping("/message/send")
     public MessageDTO sendMessage(@Valid @RequestBody SendMessageDTO dto) {
         return chatService.sendMessage(dto);
+    }
+
+    @PostMapping(value = "/{chatId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ChatImageUploadResponseDTO uploadImage(
+            @PathVariable Long chatId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return chatService.uploadChatImage(chatId, file);
     }
 
     /**

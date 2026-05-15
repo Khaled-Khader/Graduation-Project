@@ -17,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -36,6 +37,7 @@ public class ChatService {
     private final UsersRepository usersRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
+    private final CloudinaryService cloudinaryService;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final String E2EE_MESSAGE_PREFIX = "e2ee:v1:";
@@ -44,12 +46,14 @@ public class ChatService {
             MessageRepository messageRepository,
             UsersRepository usersRepository,
             SimpMessagingTemplate messagingTemplate,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            CloudinaryService cloudinaryService) {
         this.chatRepository = chatRepository;
         this.messageRepository = messageRepository;
         this.usersRepository = usersRepository;
         this.messagingTemplate = messagingTemplate;
         this.notificationService = notificationService;
+        this.cloudinaryService = cloudinaryService;
     }
 
     public ChatDTO startChat(StartChatDTO dto) {
@@ -109,8 +113,21 @@ public class ChatService {
             }
         }
 
-        if (!isEncryptedClientMessage(dto.getContent())) {
+        String content = normalize(dto.getContent());
+        String imageUrl = normalize(dto.getImageUrl());
+        boolean hasText = content != null;
+        boolean hasImage = imageUrl != null;
+
+        if (!hasText && !hasImage) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Message content or image is required");
+        }
+
+        if (hasText && !isEncryptedClientMessage(content)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Messages must be encrypted before being sent");
+        }
+
+        if (hasImage && !isValidImageUrl(imageUrl)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid image URL");
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -118,7 +135,8 @@ public class ChatService {
         Message message = new Message();
         message.setChat(chat);
         message.setSender(currentUser);
-        message.setContent(dto.getContent());
+        message.setContent(content);
+        message.setImageUrl(imageUrl);
         message.setCreatedAt(now);
         message.setIsRead(false);
 
@@ -133,6 +151,22 @@ public class ChatService {
         notifyMessageRecipient(chat, currentUser);
 
         return messageDTO;
+    }
+
+    public ChatImageUploadResponseDTO uploadChatImage(Long chatId, MultipartFile file) {
+        Users currentUser = getCurrentUser();
+        Chat chat = chatRepository.findById(chatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Chat not found"));
+
+        if (!isUserInChat(chat, currentUser)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not part of this chat");
+        }
+
+        if (!Boolean.TRUE.equals(chat.getIsActive())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This chat is closed");
+        }
+
+        return new ChatImageUploadResponseDTO(cloudinaryService.uploadChatImage(file));
     }
 
     public Page<ChatDTO> getUserChats(Pageable pageable) {
@@ -335,10 +369,23 @@ public class ChatService {
         dto.setSenderName(senderName);
         dto.setSenderProfileImage(senderImage);
         dto.setContent(message.getContent());
+        dto.setImageUrl(message.getImageUrl());
         dto.setCreatedAt(message.getCreatedAt().format(FORMATTER));
         dto.setIsRead(message.getIsRead());
 
         return dto;
+    }
+
+    private String normalize(String value) {
+        if (value == null || value.trim().isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
+
+    private boolean isValidImageUrl(String imageUrl) {
+        return cloudinaryService.isManagedImageUrl(imageUrl);
     }
 
     private String getDisplayName(Users user) {

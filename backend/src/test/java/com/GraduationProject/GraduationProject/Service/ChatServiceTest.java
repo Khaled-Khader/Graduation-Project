@@ -59,6 +59,9 @@ class ChatServiceTest {
     private NotificationService notificationService;
 
     @Mock
+    private CloudinaryService cloudinaryService;
+
+    @Mock
     private Authentication authentication;
 
     @Mock
@@ -191,6 +194,29 @@ class ChatServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         assertEquals("Messages must be encrypted before being sent", ex.getReason());
         verify(messageRepository, never()).save(any(Message.class));
+    }
+
+    @Test
+    void sendMessage_shouldSaveImageOnlyMessage() {
+        authenticateAs(owner);
+        Chat chat = chat(45L, owner, vet);
+        String imageUrl = "https://res.cloudinary.com/dn1xklmba/image/upload/v1/petnexus/chat/test.jpg";
+
+        when(chatRepository.findById(chat.getId())).thenReturn(Optional.of(chat));
+        when(messageRepository.countUnreadMessagesForUser(any(Users.class))).thenReturn(1L);
+        when(cloudinaryService.isManagedImageUrl(imageUrl)).thenReturn(true);
+        when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> {
+            Message message = invocation.getArgument(0);
+            message.setId(101L);
+            return message;
+        });
+
+        MessageDTO result = chatService.sendMessage(new SendMessageDTO(chat.getId(), null, imageUrl));
+
+        assertEquals(101L, result.getId());
+        assertNull(result.getContent());
+        assertEquals(imageUrl, result.getImageUrl());
+        verify(messageRepository).save(argThat(message -> imageUrl.equals(message.getImageUrl())));
     }
 
     @Test

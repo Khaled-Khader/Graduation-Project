@@ -59,12 +59,16 @@ export function useChatOperations() {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (content) => {
+    mutationFn: async (payload) => {
+      const messagePayload =
+        typeof payload === "string" ? { content: payload } : payload;
+
       return http("/chat/message/send", {
         method: "POST",
         body: JSON.stringify({
           chatId: selectedChat.id,
-          content: content,
+          content: messagePayload?.content ?? null,
+          imageUrl: messagePayload?.imageUrl ?? null,
         }),
       });
     },

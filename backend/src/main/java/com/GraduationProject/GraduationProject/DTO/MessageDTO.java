@@ -19,6 +19,8 @@ public class MessageDTO {
 
     private String content;
 
+    private String imageUrl;
+
     private String createdAt;
 
     private Boolean isRead;

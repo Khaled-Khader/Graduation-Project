@@ -1,21 +1,24 @@
     import { useInfiniteQuery } from "@tanstack/react-query";
     import { fetchPostsFeed } from "../api/postApi";
 
-    export function useInfinitePostsFeed(type) {
+    export function useInfinitePostsFeed(type, sortBy = "latest") {
     return useInfiniteQuery({
-        queryKey: ["posts-feed", type], // separate cache per type
+        queryKey: ["posts-feed", type, sortBy],
         queryFn: ({ pageParam }) =>
         fetchPostsFeed({
             type,
             pageParam,
             size: 10,
+            sortBy,
         }),
         getNextPageParam: (lastPage) => {
         // lastPage is your Spring Page
         if (lastPage.last) return undefined;
         return lastPage.number + 1;
         },
-        staleTime: Infinity, // cache forever for filter switching
-        keepPreviousData: true, // do not remove old pages when switching filters
+        staleTime: 5000,
+        refetchInterval: 10000,
+        refetchIntervalInBackground: false,
+        keepPreviousData: true,
     });
     }

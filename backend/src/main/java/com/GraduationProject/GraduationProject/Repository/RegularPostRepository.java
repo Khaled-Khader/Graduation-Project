@@ -25,4 +25,26 @@ public interface RegularPostRepository
             """)
             Page<RegularPost> findRegularPost(Pageable pageable);
 
+            @Query("""
+            select p 
+            from RegularPost p
+            order by p.createdAt asc
+            """)
+            Page<RegularPost> findRegularPostOldest(Pageable pageable);
+
+            @Query(
+                    value = """
+                    select p
+                    from RegularPost p
+                    left join p.comments c
+                    group by p
+                    order by count(c.id) desc, p.createdAt desc
+                    """,
+                    countQuery = """
+                    select count(p)
+                    from RegularPost p
+                    """
+            )
+            Page<RegularPost> findRegularPostMostCommented(Pageable pageable);
+
 }

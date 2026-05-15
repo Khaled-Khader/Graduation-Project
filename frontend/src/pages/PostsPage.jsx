@@ -10,6 +10,7 @@
     const [openPost, setOpenPost] = useState(false);
     const [openAdoption, setOpenAdoption] = useState(false);
     const [filter, setFilter] = useState("all");
+    const [sortBy, setSortBy] = useState("latest");
 
     function handleCreate(type) {
         setOpenChooser(false);
@@ -24,10 +25,12 @@
             <PostsHeader
             filter={filter}
             setFilter={setFilter}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
             onCreate={() => setOpenChooser(true)}
             />
 
-            <PostsFeed filter={filter} />
+            <PostsFeed filter={filter} sortBy={sortBy} />
 
             {/* dialogs */}
             <CreateChooserDialog

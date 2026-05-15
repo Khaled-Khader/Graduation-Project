@@ -2,6 +2,7 @@ package com.GraduationProject.GraduationProject.Service;
 
 import com.GraduationProject.GraduationProject.DTO.PetDTO;
 import com.GraduationProject.GraduationProject.DTO.post.AdoptionPostDTO;
+import com.GraduationProject.GraduationProject.DTO.post.AllPosts;
 import com.GraduationProject.GraduationProject.DTO.post.CreatePostDTO;
 import com.GraduationProject.GraduationProject.DTO.post.RegularPostDTO;
 import com.GraduationProject.GraduationProject.Entity.*;
@@ -41,6 +42,7 @@ public class PostService {
     private final AdoptionRequestRepository adoptionRequestRepository;
     private final UsersRepository usersRepository;
     private final PetRepository petRepository;
+    private final CommentRepository commentRepository;
 
     public PostService(
             PostRepository postRepository,
@@ -48,7 +50,8 @@ public class PostService {
             PetRepository petRepository,
             RegularPostRepository regularPostRepository,
             AdoptionPostRepository adoptionPostRepository,
-            AdoptionRequestRepository adoptionRequestRepository
+            AdoptionRequestRepository adoptionRequestRepository,
+            CommentRepository commentRepository
     ) {
         this.postRepository = postRepository;
         this.usersRepository = usersRepository;
@@ -56,6 +59,7 @@ public class PostService {
         this.regularPostRepository = regularPostRepository;
         this.adoptionPostRepository = adoptionPostRepository;
         this.adoptionRequestRepository = adoptionRequestRepository;
+        this.commentRepository = commentRepository;
     }
 
 
@@ -80,7 +84,7 @@ public class PostService {
         RegularPost post = PostFactory.createRegularPost(dto, user);
 
 
-        return PostMapper.toRegularPostDTO(postRepository.save(post));
+        return PostMapper.toRegularPostDTO(postRepository.save(post), user.getId());
     }
 
 
@@ -121,7 +125,7 @@ public class PostService {
         AdoptionPost post = PostFactory.createAdoptionPost(dto, user, pet);
 
         postRepository.save(post);
-        return PostMapper.toAdoptionPostDTO(post, false);
+        return PostMapper.toAdoptionPostDTO(post, false, user.getId());
     }
 
 
@@ -132,8 +136,18 @@ public class PostService {
      * @return Page of RegularPostDTO
      */
     public Page<RegularPostDTO> getRegularPosts(Pageable pageable) {
-        return regularPostRepository.findRegularPost(pageable)
-                .map(PostMapper::toRegularPostDTO);
+        return getRegularPosts(pageable, "latest");
+    }
+
+    public Page<RegularPostDTO> getRegularPosts(Pageable pageable, String sortBy) {
+        Long currentUserId = getCurrentUserId();
+        Page<RegularPost> posts = switch (normalizeSort(sortBy)) {
+            case "oldest" -> regularPostRepository.findRegularPostOldest(pageable);
+            case "comments" -> regularPostRepository.findRegularPostMostCommented(pageable);
+            default -> regularPostRepository.findRegularPost(pageable);
+        };
+
+        return posts.map(post -> PostMapper.toRegularPostDTO(post, currentUserId));
     }
 
     /**
@@ -143,10 +157,56 @@ public class PostService {
      * @return Page of AdoptionPostDTO
      */
     public Page<AdoptionPostDTO> getAdoptionPosts(Pageable pageable) {
-        Long currentUserId = getCurrentUserId();
+        return getAdoptionPosts(pageable, "latest");
+    }
 
-        return adoptionPostRepository.findAdoptionPost(pageable)
-                .map(post -> toAdoptionPostDTO(post, currentUserId));
+    public Page<AdoptionPostDTO> getAdoptionPosts(Pageable pageable, String sortBy) {
+        Long currentUserId = getCurrentUserId();
+        Page<AdoptionPost> posts = "oldest".equals(normalizeSort(sortBy))
+                ? adoptionPostRepository.findAdoptionPostOldest(pageable)
+                : adoptionPostRepository.findAdoptionPost(pageable);
+
+        return posts.map(post -> toAdoptionPostDTO(post, currentUserId));
+    }
+
+    public Page<AllPosts> getAllPosts(Pageable pageable, String sortBy) {
+        Long currentUserId = getCurrentUserId();
+        Page<Post> posts = switch (normalizeSort(sortBy)) {
+            case "oldest" -> postRepository.findAllPostsOldest(pageable);
+            case "comments" -> postRepository.findAllPostsMostCommented(pageable);
+            default -> postRepository.findAllPosts(pageable);
+        };
+
+        return posts.map(post -> toPostDTO(post, currentUserId));
+    }
+
+    public AllPosts updatePost(Long postId, CreatePostDTO dto) {
+        Long currentUserId = getCurrentUserId();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found"));
+
+        ensureOwner(post, currentUserId);
+        updateEditableFields(post, dto);
+
+        return toPostDTO(postRepository.save(post), currentUserId);
+    }
+
+    public void deletePost(Long postId) {
+        Long currentUserId = getCurrentUserId();
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found"));
+
+        ensureOwner(post, currentUserId);
+
+        if (post instanceof RegularPost) {
+            commentRepository.deleteByPost_Id(postId);
+        }
+
+        if (post instanceof AdoptionPost) {
+            adoptionRequestRepository.deleteByAdoptionPost_Id(postId);
+        }
+
+        postRepository.delete(post);
     }
 
     /**
@@ -182,7 +242,59 @@ public class PostService {
                 currentUserId
         );
 
-        return PostMapper.toAdoptionPostDTO(post, requestedByCurrentUser);
+        return PostMapper.toAdoptionPostDTO(post, requestedByCurrentUser, currentUserId);
+    }
+
+    private AllPosts toPostDTO(Post post, Long currentUserId) {
+        if (post instanceof RegularPost regularPost) {
+            return PostMapper.toRegularPostDTO(regularPost, currentUserId);
+        }
+
+        if (post instanceof AdoptionPost adoptionPost) {
+            return toAdoptionPostDTO(adoptionPost, currentUserId);
+        }
+
+        throw new IllegalStateException("Unsupported post type");
+    }
+
+    private void updateEditableFields(Post post, CreatePostDTO dto) {
+        if (dto.getContent() != null) {
+            String content = dto.getContent().trim();
+            if (content.isBlank()) {
+                throw new IllegalArgumentException("Post content can not be empty");
+            }
+            post.setContent(content);
+        }
+
+        if (dto.getImageUrl() != null) {
+            post.setImageUrl(dto.getImageUrl().trim().isBlank() ? null : dto.getImageUrl().trim());
+        }
+
+        if (post instanceof AdoptionPost adoptionPost && dto.getCity() != null) {
+            String city = dto.getCity().trim();
+            if (city.isBlank()) {
+                throw new IllegalArgumentException("Adoption city can not be empty");
+            }
+            adoptionPost.setCity(city);
+        }
+    }
+
+    private void ensureOwner(Post post, Long currentUserId) {
+        if (currentUserId == null || !post.getUser().getId().equals(currentUserId)) {
+            throw new AccessDeniedException("You are not allowed to change this post");
+        }
+    }
+
+    private String normalizeSort(String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "latest";
+        }
+
+        return switch (sortBy.trim().toLowerCase()) {
+            case "oldest", "old" -> "oldest";
+            case "comments", "commented", "most-comments", "most_comments", "mostcommented" -> "comments";
+            default -> "latest";
+        };
     }
 
     private Long getCurrentUserId() {

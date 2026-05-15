@@ -5,14 +5,13 @@ import com.GraduationProject.GraduationProject.DTO.post.AllPosts;
 import com.GraduationProject.GraduationProject.DTO.post.CreatePostDTO;
 import com.GraduationProject.GraduationProject.DTO.post.RegularPostDTO;
 import com.GraduationProject.GraduationProject.Service.PostService;
+import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -65,7 +64,19 @@ public class PostController {
         return postService.getAdoptionPostsByUserId();
     }
 
+    @PutMapping("/{postId}")
+    public AllPosts updatePost(
+            @PathVariable Long postId,
+            @RequestBody CreatePostDTO dto
+    ) {
+        return postService.updatePost(postId, dto);
+    }
 
+    @DeleteMapping("/{postId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePost(@PathVariable Long postId) {
+        postService.deletePost(postId);
+    }
 
     /**
      * Retrieves a feed of regular posts (paginated and shuffled).
@@ -74,12 +85,11 @@ public class PostController {
      * @return Page of RegularPostDTO objects
      */
     @GetMapping("/feed/regular")
-    public Page<RegularPostDTO> getRegularPosts(@PageableDefault(size = 10) Pageable pageable) {
-        List<RegularPostDTO> regularPostDTOS = new ArrayList<>();
-        postService.getRegularPosts(pageable).forEach(regularPostDTOS::add);
-
-        Collections.shuffle(regularPostDTOS); // Shuffle feed for randomness
-        return new PageImpl<>(regularPostDTOS, pageable, regularPostDTOS.size());
+    public Page<RegularPostDTO> getRegularPosts(
+            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(defaultValue = "latest") String sortBy
+    ) {
+        return postService.getRegularPosts(pageable, sortBy);
     }
 
     /**
@@ -89,12 +99,11 @@ public class PostController {
      * @return Page of AdoptionPostDTO objects
      */
     @GetMapping("/feed/adoption")
-    public Page<AdoptionPostDTO> getAdoptionPosts(@PageableDefault(size = 10) Pageable pageable) {
-        List<AdoptionPostDTO> adoptionPostDTOS = new ArrayList<>();
-        postService.getAdoptionPosts(pageable).forEach(adoptionPostDTOS::add);
-
-        Collections.shuffle(adoptionPostDTOS);
-        return new PageImpl<>(adoptionPostDTOS, pageable, adoptionPostDTOS.size());
+    public Page<AdoptionPostDTO> getAdoptionPosts(
+            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(defaultValue = "latest") String sortBy
+    ) {
+        return postService.getAdoptionPosts(pageable, sortBy);
     }
 
     /**
@@ -104,13 +113,10 @@ public class PostController {
      * @return Page of AllPosts objects (can be either RegularPostDTO or AdoptionPostDTO)
      */
     @GetMapping("/feed/all")
-    public Page<AllPosts> getAllPosts(@PageableDefault(size = 10) Pageable pageable) {
-        List<AllPosts> allPosts = new ArrayList<>();
-
-        postService.getRegularPosts(pageable).forEach(allPosts::add);
-        postService.getAdoptionPosts(pageable).forEach(allPosts::add);
-
-        Collections.shuffle(allPosts);
-        return new PageImpl<>(allPosts, pageable, allPosts.size());
+    public Page<AllPosts> getAllPosts(
+            @PageableDefault(size = 10) Pageable pageable,
+            @RequestParam(defaultValue = "latest") String sortBy
+    ) {
+        return postService.getAllPosts(pageable, sortBy);
     }
 }

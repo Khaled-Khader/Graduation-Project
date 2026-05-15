@@ -32,6 +32,8 @@ public interface AdoptionRequestRepository
             Pageable pageable
     );
 
+    void deleteByAdoptionPost_Id(Long adoptionPostId);
+
     // =================================================
     // جلب الطلب المقبول (واحد فقط)
     // =================================================

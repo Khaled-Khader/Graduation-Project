@@ -36,11 +36,16 @@ public class CommentMapper {
         dto.setId(comment.getId());
         dto.setContent(comment.getContent());
         dto.setCreatedAt(comment.getCreatedAt());
+        dto.setUserId(comment.getUser().getId());
 
 
         UserInfo info = comment.getUser().getUserInfo();
         if (info != null) {
-            dto.setUserName(info.getFirstName() + " " + info.getLastName());
+            String firstName = info.getFirstName() != null ? info.getFirstName() : "";
+            String lastName = info.getLastName() != null ? info.getLastName() : "";
+            String name = (firstName + " " + lastName).trim();
+            dto.setUserName(!name.isBlank() ? name : comment.getUser().getEmail());
+            dto.setUserImageUrl(info.getPhotoUrl());
         } else {
             dto.setUserName(comment.getUser().getEmail());
         }

@@ -64,7 +64,11 @@ public class CommentService {
      * @throws EntityNotFoundException if the user or post cannot be found.
      * @throws AccessDeniedException if the post is not a RegularPost.
      */
-    public void addComment(Long postId, String content) {
+    public CommentResponseDTO addComment(Long postId, String content) {
+        String trimmedContent = content == null ? "" : content.trim();
+        if (trimmedContent.isBlank()) {
+            throw new IllegalArgumentException("Comment can not be empty");
+        }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrinciple userPrinciple = (UserPrinciple) authentication.getPrincipal();
@@ -79,9 +83,11 @@ public class CommentService {
             throw new AccessDeniedException("Comments allowed only on regular posts");
         }
 
-        Comment comment = new Comment(post, user, content);
-        commentRepository.save(comment);
+        Comment comment = new Comment(post, user, trimmedContent);
+        Comment savedComment = commentRepository.save(comment);
         notifyPostOwner(post, user);
+
+        return CommentMapper.toDTO(savedComment);
     }
 
     /**

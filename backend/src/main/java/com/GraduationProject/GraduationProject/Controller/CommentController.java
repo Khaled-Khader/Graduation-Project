@@ -37,11 +37,11 @@ public class CommentController {
      * @param dto    DTO containing the comment content
      */
     @PostMapping("/post/{postId}")
-    public void addComment(
+    public CommentResponseDTO addComment(
             @PathVariable Long postId,
             @RequestBody CreateCommentDTO dto
     ) {
-        commentService.addComment(postId, dto.getContent());
+        return commentService.addComment(postId, dto.getContent());
     }
 
 

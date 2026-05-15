@@ -21,6 +21,13 @@ public interface AdoptionPostRepository
             """)
     Page<AdoptionPost> findAdoptionPost(Pageable pageable);
 
+    @Query("""
+            select p 
+            from AdoptionPost p
+            order by p.createdAt asc
+            """)
+    Page<AdoptionPost> findAdoptionPostOldest(Pageable pageable);
+
     List<AdoptionPost> findPostsByUserId(Long userId);
     AdoptionPost findAdoptionPostByPetId(Long id);
     boolean existsByPet_Id(Long petId);

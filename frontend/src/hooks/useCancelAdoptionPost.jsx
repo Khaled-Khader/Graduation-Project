@@ -22,6 +22,7 @@ export function useCancelAdoptionPost(onSuccessCallback){
                 onSuccessCallback();
                 queryClient.invalidateQueries({ queryKey: ["posts-feed"] });
                 queryClient.invalidateQueries({queryKey:["user-adoption-post"]})
+                queryClient.invalidateQueries({queryKey:["pets"]})
     },
         })
     )

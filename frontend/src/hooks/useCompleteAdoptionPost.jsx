@@ -11,10 +11,9 @@ export function useCompleteAdoptionPost(){
             return response
         },
         onSuccess:()=>{
-            query.invalidateQueries({
-                queryKeyqueryKey:["user-adoption-post"]
-                
-            })
+            query.invalidateQueries({ queryKey: ["user-adoption-post"] });
+            query.invalidateQueries({ queryKey: ["posts-feed"] });
+            query.invalidateQueries({ queryKey: ["pets"] });
         }
     })
 }

@@ -204,9 +204,11 @@ CREATE TABLE `posts` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `content` text,
   `created_at` datetime(6) DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
   `image_url` varchar(255) DEFAULT NULL,
   `owner_id` bigint NOT NULL,
   PRIMARY KEY (`id`),
+  KEY `idx_posts_created_at` (`created_at`),
   KEY `FK452mmghnrxq6h7f4f5v8ge95f` (`owner_id`),
   CONSTRAINT `FK452mmghnrxq6h7f4f5v8ge95f` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`),
   CONSTRAINT `posts_chk_1` CHECK ((`post_type` in (_utf8mb4'ADOPTION',_utf8mb4'REGULAR')))

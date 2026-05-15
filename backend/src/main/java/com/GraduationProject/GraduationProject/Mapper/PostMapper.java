@@ -28,9 +28,21 @@ public class PostMapper {
      */
     private static String resolveUserName(Users user) {
         UserInfo info = user.getUserInfo();
-        return info != null
-                ? info.getFirstName() + " " + info.getLastName()
-                : user.getEmail();
+        if (info != null) {
+            String firstName = info.getFirstName() != null ? info.getFirstName() : "";
+            String lastName = info.getLastName() != null ? info.getLastName() : "";
+            String name = (firstName + " " + lastName).trim();
+            if (!name.isBlank()) {
+                return name;
+            }
+        }
+
+        return user.getEmail();
+    }
+
+    private static String resolveUserImageUrl(Users user) {
+        UserInfo info = user.getUserInfo();
+        return info != null ? info.getPhotoUrl() : null;
     }
 
     /**
@@ -60,17 +72,23 @@ public class PostMapper {
      * @return RegularPostDTO representing the post
      */
     public static RegularPostDTO toRegularPostDTO(RegularPost post) {
+        return toRegularPostDTO(post, null);
+    }
+
+    public static RegularPostDTO toRegularPostDTO(RegularPost post, Long currentUserId) {
         RegularPostDTO dto = new RegularPostDTO();
 
         dto.setId(post.getId());
         dto.setContent(post.getContent());
         dto.setImageUrl(post.getImageUrl());
         dto.setCreatedAt(post.getCreatedAt());
+        dto.setUpdatedAt(post.getUpdatedAt());
         dto.setPostType("REGULAR");
         dto.setCommentCount(post.getComments().size());
         dto.setOwnerId(post.getUser().getId());
         dto.setOwnerName(resolveUserName(post.getUser()));
-        dto.setUserImageUrl(post.getUser().getUserInfo() != null ? post.getUser().getUserInfo().getPhotoUrl() : null);
+        dto.setUserImageUrl(resolveUserImageUrl(post.getUser()));
+        dto.setOwnedByCurrentUser(currentUserId != null && post.getUser().getId().equals(currentUserId));
 
         return dto;
     }
@@ -82,21 +100,35 @@ public class PostMapper {
      * @return AdoptionPostDTO representing the post
      */
     public static AdoptionPostDTO toAdoptionPostDTO(AdoptionPost post) {
-        return toAdoptionPostDTO(post, false);
+        return toAdoptionPostDTO(post, false, null);
     }
 
     public static AdoptionPostDTO toAdoptionPostDTO(AdoptionPost post, boolean requestedByCurrentUser) {
+        return toAdoptionPostDTO(post, requestedByCurrentUser, null);
+    }
+
+    public static AdoptionPostDTO toAdoptionPostDTO(
+            AdoptionPost post,
+            boolean requestedByCurrentUser,
+            Long currentUserId
+    ) {
         AdoptionPostDTO dto = new AdoptionPostDTO();
 
         dto.setId(post.getId());
         dto.setUserId(post.getUser().getId());
+        dto.setOwnerId(post.getUser().getId());
+        dto.setOwnerName(resolveUserName(post.getUser()));
+        dto.setUserImageUrl(resolveUserImageUrl(post.getUser()));
         dto.setContent(post.getContent());
+        dto.setImageUrl(post.getImageUrl());
         dto.setCreatedAt(post.getCreatedAt());
+        dto.setUpdatedAt(post.getUpdatedAt());
         dto.setPostType("ADOPTION");
         dto.setPetDTO(toPetDTO(post.getPet()));
         dto.setCity(post.getCity());
         dto.setAdoptionStatus(post.getAdoptionStatus().name());
         dto.setRequestedByCurrentUser(requestedByCurrentUser);
+        dto.setOwnedByCurrentUser(currentUserId != null && post.getUser().getId().equals(currentUserId));
 
         return dto;
     }

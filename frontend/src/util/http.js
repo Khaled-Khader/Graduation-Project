@@ -251,7 +251,20 @@ export async function addComment(postId, content) {
         throw new Error(text || "Failed to add comment");
     }
 
-    return true;
+    return response.json();
+}
+
+export async function updatePost(postId, data) {
+    return http(`/post/${postId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function deletePost(postId) {
+    return http(`/post/${postId}`, {
+        method: "DELETE",
+    });
 }
 
 

@@ -13,5 +13,7 @@ public interface CommentRepository
             Long postId,
             Pageable pageable
     );
+
+    void deleteByPost_Id(Long postId);
 }
 

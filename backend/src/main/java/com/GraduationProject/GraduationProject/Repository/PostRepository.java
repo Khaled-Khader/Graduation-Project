@@ -20,6 +20,25 @@ public interface PostRepository extends JpaRepository<Post,Long> {
     """)
     Page<Post> findAllPosts(Pageable pageable);
 
+    @Query("""
+        select p from Post p
+        order by p.createdAt asc
+    """)
+    Page<Post> findAllPostsOldest(Pageable pageable);
+
+    @Query(
+            value = """
+                select p from Post p
+                left join Comment c on c.post = p
+                group by p
+                order by count(c.id) desc, p.createdAt desc
+            """,
+            countQuery = """
+                select count(p) from Post p
+            """
+    )
+    Page<Post> findAllPostsMostCommented(Pageable pageable);
+
 
 
     AdoptionPost findAdoptionPostByPetId(Long id);

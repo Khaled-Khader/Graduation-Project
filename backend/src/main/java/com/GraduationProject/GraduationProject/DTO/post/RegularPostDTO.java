@@ -1,10 +1,8 @@
 package com.GraduationProject.GraduationProject.DTO.post;
 
-import com.GraduationProject.GraduationProject.DTO.PetDTO;
 import lombok.Data;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 @Data
 public class RegularPostDTO implements AllPosts {
 
@@ -13,8 +11,10 @@ public class RegularPostDTO implements AllPosts {
     String imageUrl;
     String userImageUrl;
     Instant createdAt;
+    Instant updatedAt;
     String postType;
     int commentCount;
     Long ownerId;
     String ownerName;
+    boolean ownedByCurrentUser;
 }

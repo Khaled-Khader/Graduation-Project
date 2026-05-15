@@ -6,10 +6,11 @@ export function useAddComment(postId, onSuccess) {
 
     return useMutation({
         mutationFn: (content) => addComment(postId, content),
-        onSuccess: () => {
+        onSuccess: (data) => {
         
         queryClient.invalidateQueries({ queryKey: ["comments", postId] });
-        onSuccess?.();
+        queryClient.invalidateQueries({ queryKey: ["posts-feed"] });
+        onSuccess?.(data);
         },
     });
 }

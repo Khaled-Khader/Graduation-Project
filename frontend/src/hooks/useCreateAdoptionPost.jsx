@@ -10,6 +10,7 @@
         // Refresh adoption & all feeds
         queryClient.invalidateQueries({ queryKey: ["posts-feed", "adoption"] });
         queryClient.invalidateQueries({ queryKey: ["posts-feed", "all"] });
+        queryClient.invalidateQueries({ queryKey: ["pets"] });
 
         // Call the callback if provided
         onSuccess?.(data, variables, context);

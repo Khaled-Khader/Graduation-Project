@@ -1,21 +1,21 @@
-    
-    export async function uploadImageToCloudinary(file) {
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+export async function uploadImageToCloudinary(file, folder = "petnexus/uploads") {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "petnexus_upload");
+    formData.append("folder", folder);
 
-    const response = await fetch(
-        "https://api.cloudinary.com/v1_1/di1xpud7d/image/upload",
-        {
+    const response = await fetch(`${BASE_URL}/images/upload`, {
         method: "POST",
+        credentials: "include",
         body: formData,
-        }
-    );
+    });
 
     if (!response.ok) {
-        throw new Error("Cloudinary upload failed");
+        const text = await response.text();
+        throw new Error(text || "Cloudinary upload failed");
     }
 
     const data = await response.json();
-    return data.secure_url; // ✅ THIS IS THE IMAGE URL
-    }
+    return data.imageUrl;
+}

@@ -28,7 +28,7 @@ export default function CreatePostDialog({ open, onClose }) {
         if (image) {
             try {
                 setIsUploading(true);
-                imageUrl = await uploadImageToCloudinary(image);
+                imageUrl = await uploadImageToCloudinary(image, "petnexus/posts");
             } catch (err) {
                 console.error("Cloudinary upload error:", err);
                 alert("Failed to upload image");

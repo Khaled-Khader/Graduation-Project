@@ -86,6 +86,7 @@ public class SecurityConfig {
                         .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/post/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/chat/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/images/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/notifications/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/ws", "/ws/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         // Any other requests must be authenticated

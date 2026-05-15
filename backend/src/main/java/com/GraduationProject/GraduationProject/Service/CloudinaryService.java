@@ -25,6 +25,7 @@ import java.util.TreeMap;
 public class CloudinaryService {
 
     private static final long MAX_IMAGE_SIZE_BYTES = 8L * 1024L * 1024L;
+    private static final String DEFAULT_UPLOAD_FOLDER = "petnexus/uploads";
     private static final String CHAT_UPLOAD_FOLDER = "petnexus/chat";
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -43,19 +44,24 @@ public class CloudinaryService {
     }
 
     public String uploadChatImage(MultipartFile file) {
+        return uploadImage(file, CHAT_UPLOAD_FOLDER);
+    }
+
+    public String uploadImage(MultipartFile file, String folder) {
         validateImage(file);
+        String uploadFolder = normalizeFolder(folder);
 
         try {
             long timestamp = Instant.now().getEpochSecond();
             Map<String, String> signedParams = new TreeMap<>();
-            signedParams.put("folder", CHAT_UPLOAD_FOLDER);
+            signedParams.put("folder", uploadFolder);
             signedParams.put("timestamp", String.valueOf(timestamp));
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("file", new NamedByteArrayResource(file.getBytes(), file.getOriginalFilename()));
             body.add("api_key", apiKey);
             body.add("timestamp", String.valueOf(timestamp));
-            body.add("folder", CHAT_UPLOAD_FOLDER);
+            body.add("folder", uploadFolder);
             body.add("signature", sign(signedParams));
 
             HttpHeaders headers = new HttpHeaders();
@@ -84,6 +90,27 @@ public class CloudinaryService {
     public boolean isManagedImageUrl(String imageUrl) {
         return imageUrl != null
                 && imageUrl.startsWith("https://res.cloudinary.com/" + cloudName + "/image/upload/");
+    }
+
+    private String normalizeFolder(String folder) {
+        if (folder == null || folder.trim().isBlank()) {
+            return DEFAULT_UPLOAD_FOLDER;
+        }
+
+        String normalized = folder.trim()
+                .replace("\\", "/")
+                .replaceAll("[^A-Za-z0-9_/-]", "")
+                .replaceAll("/{2,}", "/");
+
+        if (normalized.isBlank()) {
+            return DEFAULT_UPLOAD_FOLDER;
+        }
+
+        if (!normalized.startsWith("petnexus/")) {
+            return "petnexus/" + normalized;
+        }
+
+        return normalized;
     }
 
     private void validateImage(MultipartFile file) {

@@ -66,7 +66,7 @@ export default function AddPetForm({
 
         setUploading(true);
         try {
-            const imageUrl = await uploadImageToCloudinary(file);
+            const imageUrl = await uploadImageToCloudinary(file, "petnexus/pets");
             setForm((prev) => ({ ...prev, photoUrl: imageUrl }));
         } catch {
             alert("Image upload failed");

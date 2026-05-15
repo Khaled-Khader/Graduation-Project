@@ -66,7 +66,7 @@ export default function EditProfileForm({ onClose, profile }) {
 
         setUploading(true);
         try {
-            const imageUrl = await uploadImageToCloudinary(file);
+            const imageUrl = await uploadImageToCloudinary(file, "petnexus/profiles");
             setForm((prev) => ({ ...prev, photoUrl: imageUrl }));
         } catch {
             alert("Image upload failed");

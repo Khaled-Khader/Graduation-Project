@@ -1,5 +1,5 @@
     import { useMutation, useQueryClient } from "@tanstack/react-query";
-    import { LoginFetchData } from "../util/http";
+    import { LoginFetchData, readErrorResponse } from "../util/http";
 
     export function useLogin() {
     const queryClient = useQueryClient();
@@ -10,7 +10,12 @@
 
         
         if (response.status !== 200) {
-            throw new Error("Invalid email or password");
+            const errorData = await readErrorResponse(response);
+            const error = new Error(errorData.message || "Invalid email or password");
+            error.status = response.status;
+            error.accountStatus = errorData.accountStatus;
+            error.reason = errorData.reason;
+            throw error;
         }
 
         const userData = await response.json(); 

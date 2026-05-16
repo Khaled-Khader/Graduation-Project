@@ -1,5 +1,7 @@
 package com.GraduationProject.GraduationProject.Controller;
 
+import com.GraduationProject.GraduationProject.DTO.AdminPostDeletionDTO;
+import com.GraduationProject.GraduationProject.DTO.AdminStatusUpdateDTO;
 import com.GraduationProject.GraduationProject.DTO.AdminUserDTO;
 import com.GraduationProject.GraduationProject.DTO.post.AllPosts;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -65,17 +68,19 @@ public class AdminController {
     @PutMapping("/users/{userId}/suspend")
     public AdminUserDTO suspendUser(
             @PathVariable Long userId,
+            @RequestBody(required = false) AdminStatusUpdateDTO dto,
             @AuthenticationPrincipal UserPrinciple currentUser
     ) {
-        return adminService.suspendUser(userId, currentUser);
+        return adminService.suspendUser(userId, reasonFrom(dto), currentUser);
     }
 
     @PutMapping("/users/{userId}/ban")
     public AdminUserDTO banUser(
             @PathVariable Long userId,
+            @RequestBody(required = false) AdminStatusUpdateDTO dto,
             @AuthenticationPrincipal UserPrinciple currentUser
     ) {
-        return adminService.banUser(userId, currentUser);
+        return adminService.banUser(userId, reasonFrom(dto), currentUser);
     }
 
     @PutMapping("/users/{userId}/activate")
@@ -96,7 +101,18 @@ public class AdminController {
 
     @DeleteMapping("/posts/{postId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletePost(@PathVariable Long postId) {
-        adminService.deletePost(postId);
+    public void deletePost(
+            @PathVariable Long postId,
+            @RequestBody(required = false) AdminPostDeletionDTO dto
+    ) {
+        adminService.deletePost(postId, reasonFrom(dto));
+    }
+
+    private String reasonFrom(AdminStatusUpdateDTO dto) {
+        return dto != null ? dto.reason() : null;
+    }
+
+    private String reasonFrom(AdminPostDeletionDTO dto) {
+        return dto != null ? dto.reason() : null;
     }
 }

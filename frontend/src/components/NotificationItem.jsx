@@ -56,6 +56,12 @@ const TYPE_CONFIG = {
     icon: Megaphone,
     tone: "blue",
   },
+  ADMIN_MODERATION: {
+    label: "Admin moderation",
+    detail: "The PetNexus team updated your content.",
+    icon: ShieldCheck,
+    tone: "amber",
+  },
 };
 
 function getTypeConfig(type) {

@@ -10,6 +10,7 @@
     const [password, setPassword] = useState("");
     const [emailError, setEmailError] = useState(""); // for invalid credentials
     const [passwordError, setPasswordError] = useState("");
+    const [accessError, setAccessError] = useState(null);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -17,6 +18,7 @@
         // reset errors
         setEmailError("");
         setPasswordError("");
+        setAccessError(null);
 
         login.mutate(
         { email, password },
@@ -28,6 +30,15 @@
             navigate(data?.role === "ADMIN" ? "/admin" : "/app");
             },
             onError: (err) => {
+            if (err.status === 403 && err.accountStatus) {
+                setAccessError({
+                    message: err.message,
+                    accountStatus: err.accountStatus,
+                    reason: err.reason,
+                });
+                return;
+            }
+
             // show inline error under fields
             if (err.message.includes("Invalid email")) {
                 setEmailError("Invalid email or password or account does not exist");
@@ -70,6 +81,20 @@
             <h3 className="text-2xl font-bold text-[#0A1B70] mb-4">
                 Account Information
             </h3>
+
+            {accessError && (
+                <div className="mb-5 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-red-800">
+                <p className="font-bold">{accessError.message}</p>
+                <p className="mt-1 text-sm">
+                    Status: <span className="font-semibold">{accessError.accountStatus}</span>
+                </p>
+                {accessError.reason && (
+                    <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+                    Reason: {accessError.reason}
+                    </p>
+                )}
+                </div>
+            )}
 
             <div className="flex flex-col gap-5">
                 {/* Email */}

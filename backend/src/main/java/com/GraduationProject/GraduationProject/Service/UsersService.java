@@ -4,12 +4,10 @@ import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
+import com.GraduationProject.GraduationProject.Exception.AccountBlockedException;
 import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,16 +26,13 @@ public class UsersService {
 
     private final UsersRepository usersRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private final AuthenticationManager authenticationManager;
     private final JWTService jwtService;
 
     public UsersService(UsersRepository usersRepository,
                         BCryptPasswordEncoder bCryptPasswordEncoder,
-                        AuthenticationManager authenticationManager,
                         JWTService jwtService) {
         this.usersRepository = usersRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
-        this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
     }
 
@@ -129,32 +124,32 @@ public class UsersService {
      * @return LoginResult with JWT token and user info, or null if authentication fails
      */
     public LoginResult verify(UserLoginDTO userLoginDTO) {
-        try {
+        Users user = usersRepository.findByEmail(userLoginDTO.email());
 
-            Authentication authentication =
-                    authenticationManager.authenticate(
-                            new UsernamePasswordAuthenticationToken(
-                                    userLoginDTO.email(),
-                                    userLoginDTO.passwordHash()
-                            )
-                    );
-
-            Users user = usersRepository.findByEmail(userLoginDTO.email());
-
-            String jwt = jwtService.generateJWTToken(userLoginDTO.email(), user.getRole());
-
-            UserResponseDTO userResponseDTO = new UserResponseDTO(
-                    user.getEmail(),
-                    user.getRole().toString(),
-                    user.getId()
-            );
-
-            return new LoginResult(jwt, userResponseDTO);
-
-        } catch (Exception e) {
-
+        if (user == null
+                || userLoginDTO.passwordHash() == null
+                || user.getPasswordHash() == null
+                || !bCryptPasswordEncoder.matches(userLoginDTO.passwordHash(), user.getPasswordHash())) {
             return null;
         }
+
+        UserAccountStatus accountStatus = user.getAccountStatus() != null
+                ? user.getAccountStatus()
+                : UserAccountStatus.ACTIVE;
+
+        if (accountStatus != UserAccountStatus.ACTIVE) {
+            throw new AccountBlockedException(accountStatus, user.getAccountStatusReason());
+        }
+
+        String jwt = jwtService.generateJWTToken(userLoginDTO.email(), user.getRole());
+
+        UserResponseDTO userResponseDTO = new UserResponseDTO(
+                user.getEmail(),
+                user.getRole().toString(),
+                user.getId()
+        );
+
+        return new LoginResult(jwt, userResponseDTO);
     }
 
 }

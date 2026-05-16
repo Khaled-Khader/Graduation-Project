@@ -182,6 +182,8 @@ function UsersSection() {
   const [role, setRole] = useState("");
   const [accountStatus, setAccountStatus] = useState("");
   const [page, setPage] = useState(0);
+  const [statusTarget, setStatusTarget] = useState(null);
+  const [statusReason, setStatusReason] = useState("");
 
   const usersQuery = useQuery({
     queryKey: ["admin-users", query, role, accountStatus, page],
@@ -189,8 +191,12 @@ function UsersSection() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ userId, action }) => updateAdminUserStatus(userId, action),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+    mutationFn: ({ userId, action, reason }) => updateAdminUserStatus(userId, action, reason),
+    onSuccess: () => {
+      setStatusTarget(null);
+      setStatusReason("");
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    },
   });
 
   const usersList = usersQuery.data?.content || [];
@@ -199,6 +205,27 @@ function UsersSection() {
   function changeFilter(setter, value) {
     setter(value);
     setPage(0);
+  }
+
+  function prepareStatusChange(user, action) {
+    setStatusTarget({
+      userId: user.id,
+      action,
+      name: fullName(user),
+      status: action === "ban" ? "BANNED" : "SUSPENDED",
+    });
+    setStatusReason("");
+  }
+
+  function submitStatusChange() {
+    const reason = statusReason.trim();
+    if (!statusTarget || !reason) return;
+
+    statusMutation.mutate({
+      userId: statusTarget.userId,
+      action: statusTarget.action,
+      reason,
+    });
   }
 
   return (
@@ -235,6 +262,36 @@ function UsersSection() {
           ))}
         </select>
       </div>
+
+      {statusTarget && (
+        <div className="grid gap-3 rounded-lg border border-amber-300/25 bg-amber-500/10 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-amber-100">
+              {statusTarget.status === "BANNED" ? "Ban" : "Suspend"} {statusTarget.name}
+            </p>
+            <ActionButton tone="neutral" onClick={() => setStatusTarget(null)}>
+              Cancel
+            </ActionButton>
+          </div>
+          <textarea
+            value={statusReason}
+            onChange={(event) => setStatusReason(event.target.value)}
+            rows={3}
+            maxLength={1000}
+            placeholder="Reason shown to the user on login"
+            className="min-h-24 resize-y rounded-lg border border-white/10 bg-white/10 px-3 py-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-amber-300/70"
+          />
+          <div className="flex justify-end">
+            <ActionButton
+              tone={statusTarget.status === "BANNED" ? "danger" : "warning"}
+              disabled={!statusReason.trim() || statusMutation.isPending}
+              onClick={submitStatusChange}
+            >
+              {statusMutation.isPending ? "Saving..." : `Confirm ${statusTarget.status}`}
+            </ActionButton>
+          </div>
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-white/10 bg-[#0D1830]">
         <div className="overflow-x-auto">
@@ -284,6 +341,11 @@ function UsersSection() {
                     </td>
                     <td className="px-4 py-4">
                       <StatusBadge value={user.accountStatus} />
+                      {user.accountStatus !== "ACTIVE" && user.accountStatusReason && (
+                        <p className="mt-2 max-w-[260px] whitespace-pre-wrap break-words text-xs text-white/55">
+                          {user.accountStatusReason}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <StatusBadge value={user.verificationStatus} />
@@ -301,7 +363,7 @@ function UsersSection() {
                         <ActionButton
                           tone="warning"
                           disabled={statusMutation.isPending || user.role === "ADMIN" || user.accountStatus === "SUSPENDED"}
-                          onClick={() => statusMutation.mutate({ userId: user.id, action: "suspend" })}
+                          onClick={() => prepareStatusChange(user, "suspend")}
                         >
                           <UserCog size={16} />
                           Suspend
@@ -309,7 +371,7 @@ function UsersSection() {
                         <ActionButton
                           tone="danger"
                           disabled={statusMutation.isPending || user.role === "ADMIN" || user.accountStatus === "BANNED"}
-                          onClick={() => statusMutation.mutate({ userId: user.id, action: "ban" })}
+                          onClick={() => prepareStatusChange(user, "ban")}
                         >
                           <Ban size={16} />
                           Ban
@@ -503,6 +565,7 @@ function PostsSection() {
   const [page, setPage] = useState(0);
   const [sortBy, setSortBy] = useState("latest");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteReason, setDeleteReason] = useState("");
 
   const postsQuery = useQuery({
     queryKey: ["admin-posts", page, sortBy],
@@ -510,9 +573,10 @@ function PostsSection() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteAdminPost,
+    mutationFn: ({ postId, reason }) => deleteAdminPost(postId, reason),
     onSuccess: () => {
       setDeleteTarget(null);
+      setDeleteReason("");
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
     },
   });
@@ -559,7 +623,13 @@ function PostsSection() {
                   <p className="font-semibold text-white">{post.ownerName || "Unknown user"}</p>
                   <p className="text-xs text-white/50">Owner ID {post.ownerId || post.userId}</p>
                 </div>
-                <ActionButton tone="danger" onClick={() => setDeleteTarget(post.id)}>
+                <ActionButton
+                  tone="danger"
+                  onClick={() => {
+                    setDeleteTarget(post.id);
+                    setDeleteReason("");
+                  }}
+                >
                   <Trash2 size={16} />
                   Delete
                 </ActionButton>
@@ -576,18 +646,34 @@ function PostsSection() {
               )}
 
               {deleteTarget === post.id && (
-                <div className="mt-4 flex flex-wrap items-center justify-end gap-2 rounded-lg border border-red-300/20 bg-red-500/10 p-3">
-                  <span className="mr-auto text-sm text-red-100">Delete this post permanently?</span>
-                  <ActionButton tone="neutral" onClick={() => setDeleteTarget(null)}>
+                <div className="mt-4 grid gap-3 rounded-lg border border-red-300/20 bg-red-500/10 p-3">
+                  <span className="text-sm text-red-100">Delete this post permanently?</span>
+                  <textarea
+                    value={deleteReason}
+                    onChange={(event) => setDeleteReason(event.target.value)}
+                    rows={3}
+                    maxLength={1000}
+                    placeholder="Reason sent to the post owner"
+                    className="min-h-24 resize-y rounded-lg border border-white/10 bg-white/10 px-3 py-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-red-300/70"
+                  />
+                  <div className="flex flex-wrap justify-end gap-2">
+                  <ActionButton
+                    tone="neutral"
+                    onClick={() => {
+                      setDeleteTarget(null);
+                      setDeleteReason("");
+                    }}
+                  >
                     Cancel
                   </ActionButton>
                   <ActionButton
                     tone="danger"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate(post.id)}
+                    disabled={!deleteReason.trim() || deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate({ postId: post.id, reason: deleteReason.trim() })}
                   >
                     {deleteMutation.isPending ? "Deleting..." : "Delete"}
                   </ActionButton>
+                  </div>
                 </div>
               )}
             </article>

@@ -1,6 +1,7 @@
 package com.GraduationProject.GraduationProject.Service;
 
 import com.GraduationProject.GraduationProject.DTO.AdminUserDTO;
+import com.GraduationProject.GraduationProject.DTO.CreateNotificationDTO;
 import com.GraduationProject.GraduationProject.DTO.post.AdoptionPostDTO;
 import com.GraduationProject.GraduationProject.DTO.post.AllPosts;
 import com.GraduationProject.GraduationProject.DTO.post.RegularPostDTO;
@@ -10,6 +11,7 @@ import com.GraduationProject.GraduationProject.Entity.RegularPost;
 import com.GraduationProject.GraduationProject.Entity.UserInfo;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.NotificationType;
 import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import com.GraduationProject.GraduationProject.Mapper.PostMapper;
@@ -34,19 +36,22 @@ public class AdminService {
     private final CommentRepository commentRepository;
     private final AdoptionRequestRepository adoptionRequestRepository;
     private final ProviderVerificationService providerVerificationService;
+    private final NotificationService notificationService;
 
     public AdminService(
             UsersRepository usersRepository,
             PostRepository postRepository,
             CommentRepository commentRepository,
             AdoptionRequestRepository adoptionRequestRepository,
-            ProviderVerificationService providerVerificationService
+            ProviderVerificationService providerVerificationService,
+            NotificationService notificationService
     ) {
         this.usersRepository = usersRepository;
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
         this.adoptionRequestRepository = adoptionRequestRepository;
         this.providerVerificationService = providerVerificationService;
+        this.notificationService = notificationService;
     }
 
     public Page<AdminUserDTO> listUsers(
@@ -59,16 +64,16 @@ public class AdminService {
                 .map(this::toAdminUserDTO);
     }
 
-    public AdminUserDTO suspendUser(Long userId, UserPrinciple adminUser) {
-        return updateUserStatus(userId, UserAccountStatus.SUSPENDED, adminUser);
+    public AdminUserDTO suspendUser(Long userId, String reason, UserPrinciple adminUser) {
+        return updateUserStatus(userId, UserAccountStatus.SUSPENDED, reason, adminUser);
     }
 
-    public AdminUserDTO banUser(Long userId, UserPrinciple adminUser) {
-        return updateUserStatus(userId, UserAccountStatus.BANNED, adminUser);
+    public AdminUserDTO banUser(Long userId, String reason, UserPrinciple adminUser) {
+        return updateUserStatus(userId, UserAccountStatus.BANNED, reason, adminUser);
     }
 
     public AdminUserDTO activateUser(Long userId, UserPrinciple adminUser) {
-        return updateUserStatus(userId, UserAccountStatus.ACTIVE, adminUser);
+        return updateUserStatus(userId, UserAccountStatus.ACTIVE, null, adminUser);
     }
 
     public Page<AllPosts> listPosts(Pageable pageable, String sortBy) {
@@ -81,9 +86,12 @@ public class AdminService {
         return posts.map(this::toPostDTO);
     }
 
-    public void deletePost(Long postId) {
+    public void deletePost(Long postId, String reason) {
+        String cleanedReason = requireReason(reason);
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+
+        notifyPostOwnerAboutDeletion(post, cleanedReason);
 
         commentRepository.deleteByPost_Id(postId);
 
@@ -97,13 +105,16 @@ public class AdminService {
     private AdminUserDTO updateUserStatus(
             Long userId,
             UserAccountStatus accountStatus,
+            String reason,
             UserPrinciple adminUser
     ) {
         Users targetUser = usersRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         ensureCanModerateUser(targetUser, adminUser);
+        String cleanedReason = accountStatus == UserAccountStatus.ACTIVE ? null : requireReason(reason);
         targetUser.setAccountStatus(accountStatus);
+        targetUser.setAccountStatusReason(cleanedReason);
 
         return toAdminUserDTO(usersRepository.save(targetUser));
     }
@@ -150,6 +161,7 @@ public class AdminService {
                 user.getEmail(),
                 user.getRole() != null ? user.getRole().name() : null,
                 accountStatus.name(),
+                user.getAccountStatusReason(),
                 info != null ? info.getFirstName() : null,
                 info != null ? info.getLastName() : null,
                 info != null ? info.getPhotoUrl() : null,
@@ -172,5 +184,30 @@ public class AdminService {
             case "comments", "commented", "most-comments", "most_comments", "mostcommented" -> "comments";
             default -> "latest";
         };
+    }
+
+    private String requireReason(String reason) {
+        String cleanedReason = reason == null ? "" : reason.trim();
+        if (cleanedReason.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reason is required");
+        }
+
+        return cleanedReason;
+    }
+
+    private void notifyPostOwnerAboutDeletion(Post post, String reason) {
+        Users owner = post.getUser();
+        if (owner == null || owner.getId() == null) {
+            return;
+        }
+
+        notificationService.createNotification(new CreateNotificationDTO(
+                owner.getId(),
+                NotificationType.ADMIN_MODERATION.name(),
+                "Post removed by admin",
+                "Your post #" + post.getId() + " was removed by an admin. Reason: " + reason,
+                null,
+                null
+        ));
     }
 }

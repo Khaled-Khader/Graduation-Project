@@ -53,6 +53,21 @@ export async function LoginFetchData({ email, password }) {
     return response;
 }
 
+export async function readErrorResponse(response) {
+    const contentType = response.headers.get("content-type") || "";
+
+    try {
+        if (contentType.includes("application/json")) {
+            return await response.json();
+        }
+
+        const text = await response.text();
+        return { message: text };
+    } catch {
+        return { message: "Request failed" };
+    }
+}
+
 export async function LogoutFetchData(){
     const response =await fetch(`${BASE_URL}/users/logout`,{
         credentials:"include",
@@ -441,9 +456,10 @@ export async function fetchAdminUsers({ query = "", role = "", accountStatus = "
     return http(`/api/admin/users?${params.toString()}`);
 }
 
-export async function updateAdminUserStatus(userId, action) {
+export async function updateAdminUserStatus(userId, action, reason = "") {
     return http(`/api/admin/users/${userId}/${action}`, {
         method: "PUT",
+        body: JSON.stringify({ reason }),
     });
 }
 
@@ -478,9 +494,10 @@ export async function fetchAdminPosts({ page = 0, size = 20, sortBy = "latest" }
     return http(`/api/admin/posts?${params.toString()}`);
 }
 
-export async function deleteAdminPost(postId) {
+export async function deleteAdminPost(postId, reason) {
     return http(`/api/admin/posts/${postId}`, {
         method: "DELETE",
+        body: JSON.stringify({ reason }),
     });
 }
 
@@ -490,4 +507,3 @@ export async function sendAdminBroadcastNotification({ title, message }) {
         body: JSON.stringify({ title, message }),
     });
 }
-

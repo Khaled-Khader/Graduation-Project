@@ -3,6 +3,7 @@ package com.GraduationProject.GraduationProject.Controller;
 import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
+import com.GraduationProject.GraduationProject.Exception.AccountBlockedException;
 import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
 import com.GraduationProject.GraduationProject.Service.JWTService;
 import com.GraduationProject.GraduationProject.Service.UsersService;
@@ -74,7 +75,18 @@ public class UsersController {
      */
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody UserLoginDTO userLoginDTO) {
-        LoginResult loginResult = usersService.verify(userLoginDTO);
+        LoginResult loginResult;
+        try {
+            loginResult = usersService.verify(userLoginDTO);
+        } catch (AccountBlockedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .header(HttpHeaders.SET_COOKIE, authCookie("", 0).toString())
+                    .body(Map.of(
+                            "message", e.getMessage(),
+                            "accountStatus", e.getAccountStatus().name(),
+                            "reason", e.getReason() != null ? e.getReason() : ""
+                    ));
+        }
 
         if (loginResult == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

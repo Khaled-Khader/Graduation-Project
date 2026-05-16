@@ -1,9 +1,11 @@
 package com.GraduationProject.GraduationProject.Service;
 
 import com.GraduationProject.GraduationProject.DTO.AdminUserDTO;
+import com.GraduationProject.GraduationProject.DTO.CreateNotificationDTO;
 import com.GraduationProject.GraduationProject.Entity.AdoptionPost;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.NotificationType;
 import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import com.GraduationProject.GraduationProject.Repository.AdoptionRequestRepository;
@@ -13,6 +15,7 @@ import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Security.UserPrinciple;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -46,6 +49,9 @@ class AdminServiceTest {
     @Mock
     private ProviderVerificationService providerVerificationService;
 
+    @Mock
+    private NotificationService notificationService;
+
     @InjectMocks
     private AdminService adminService;
 
@@ -58,10 +64,12 @@ class AdminServiceTest {
         when(usersRepository.save(target)).thenReturn(target);
         when(providerVerificationService.getProviderStatus(target)).thenReturn(VerificationStatus.UNVERIFIED);
 
-        AdminUserDTO result = adminService.suspendUser(target.getId(), admin);
+        AdminUserDTO result = adminService.suspendUser(target.getId(), "Repeated policy violations", admin);
 
         assertEquals(UserAccountStatus.SUSPENDED, target.getAccountStatus());
+        assertEquals("Repeated policy violations", target.getAccountStatusReason());
         assertEquals("SUSPENDED", result.accountStatus());
+        assertEquals("Repeated policy violations", result.accountStatusReason());
         verify(usersRepository).save(target);
     }
 
@@ -74,7 +82,7 @@ class AdminServiceTest {
 
         ResponseStatusException ex = assertThrows(
                 ResponseStatusException.class,
-                () -> adminService.banUser(adminUser.getId(), admin)
+                () -> adminService.banUser(adminUser.getId(), "Security abuse", admin)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
@@ -90,7 +98,7 @@ class AdminServiceTest {
 
         ResponseStatusException ex = assertThrows(
                 ResponseStatusException.class,
-                () -> adminService.banUser(targetAdmin.getId(), admin)
+                () -> adminService.banUser(targetAdmin.getId(), "Security abuse", admin)
         );
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
@@ -100,14 +108,25 @@ class AdminServiceTest {
     @Test
     void deletePost_shouldDeleteAdoptionRequestsAndPost() {
         AdoptionPost post = new AdoptionPost();
+        post.setUser(user(10L, EnumRole.OWNER));
 
         when(postRepository.findById(20L)).thenReturn(Optional.of(post));
 
-        adminService.deletePost(20L);
+        adminService.deletePost(20L, "Inappropriate content");
 
         verify(commentRepository).deleteByPost_Id(20L);
         verify(adoptionRequestRepository).deleteByAdoptionPost_Id(20L);
         verify(postRepository).delete(post);
+
+        ArgumentCaptor<CreateNotificationDTO> notificationCaptor =
+                ArgumentCaptor.forClass(CreateNotificationDTO.class);
+        verify(notificationService).createNotification(notificationCaptor.capture());
+
+        CreateNotificationDTO notification = notificationCaptor.getValue();
+        assertEquals(10L, notification.getUserId());
+        assertEquals(NotificationType.ADMIN_MODERATION.name(), notification.getType());
+        assertEquals("Post removed by admin", notification.getTitle());
+        assertEquals(true, notification.getMessage().contains("Inappropriate content"));
     }
 
     private Users user(Long id, EnumRole role) {

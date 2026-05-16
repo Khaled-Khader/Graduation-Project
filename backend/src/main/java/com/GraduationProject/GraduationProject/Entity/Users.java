@@ -34,6 +34,9 @@ public class Users {
     @Column(name = "account_status", length = 30, columnDefinition = "varchar(30)")
     private UserAccountStatus accountStatus = UserAccountStatus.ACTIVE;
 
+    @Column(name = "account_status_reason", columnDefinition = "TEXT")
+    private String accountStatusReason;
+
     @OneToOne(mappedBy = "users", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserInfo userInfo;
 

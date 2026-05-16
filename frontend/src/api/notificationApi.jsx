@@ -10,6 +10,7 @@ const DEFAULT_NOTIFICATION_TITLES = {
   POST_INTERACTION: "Post interaction",
   VERIFICATION_STATUS: "Verification update",
   ADMIN_ANNOUNCEMENT: "Admin announcement",
+  ADMIN_MODERATION: "Admin moderation",
 };
 
 function toBoolean(value) {

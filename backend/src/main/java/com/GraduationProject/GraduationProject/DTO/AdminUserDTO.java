@@ -5,6 +5,7 @@ public record AdminUserDTO(
         String email,
         String role,
         String accountStatus,
+        String accountStatusReason,
         String firstName,
         String lastName,
         String photoUrl,

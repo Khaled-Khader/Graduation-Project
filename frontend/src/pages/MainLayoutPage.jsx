@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import MainNavigationComponent from "../components/MainNavigationComponent"
+import VerificationDialog from "../components/VerificationDialog";
 
 export default function MainLayoutPage(){
     return (
@@ -7,6 +8,7 @@ export default function MainLayoutPage(){
         
         {/* TOP NAVBAR */}
         <MainNavigationComponent />
+        <VerificationDialog />
 
         {/* CHILD ROUTES RENDER HERE */}
         <main className="max-w-[1200px] mx-auto px-4 py-8">

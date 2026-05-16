@@ -10,7 +10,7 @@
         description: "",
     });
 
-    const { mutate, isPending } = useMutation({
+    const { mutate, isPending, isError, error } = useMutation({
         mutationFn: addService,
         onSuccess: () => {
         queryClient.invalidateQueries(["profile"]);
@@ -81,6 +81,12 @@
             />
 
             {/* SUBMIT */}
+            {isError && (
+            <p className="rounded-xl bg-red-500/10 p-3 text-sm text-red-100">
+                {error?.message || "Unable to save service"}
+            </p>
+            )}
+
             <button
             disabled={!isFormValid || isPending}
             className={`w-full py-3 rounded-xl font-semibold transition

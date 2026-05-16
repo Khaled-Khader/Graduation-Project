@@ -3,15 +3,18 @@ package com.GraduationProject.GraduationProject.Service;
 import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import com.GraduationProject.GraduationProject.Repository.AdoptionPostRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Security.UserPrinciple;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -27,13 +30,16 @@ public class UserProfileService {
 
     private final UsersRepository usersRepository;
     private final AdoptionPostRepository adoptionPostRepository;
+    private final ProviderVerificationService providerVerificationService;
 
     public UserProfileService(
             UsersRepository usersRepository,
-            AdoptionPostRepository adoptionPostRepository
+            AdoptionPostRepository adoptionPostRepository,
+            ProviderVerificationService providerVerificationService
     ) {
         this.usersRepository = usersRepository;
         this.adoptionPostRepository = adoptionPostRepository;
+        this.providerVerificationService = providerVerificationService;
     }
 
     /**
@@ -50,6 +56,9 @@ public class UserProfileService {
     public ProfileDTO getUserProfile(Long userId) {
         Users user = usersRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        VerificationStatus verificationStatus = providerVerificationService.getProviderStatus(user);
+        boolean verified = verificationStatus == VerificationStatus.VERIFIED;
 
         UserInfoDTO userInfoDTO = user.getUserInfo() != null
                 ? new UserInfoDTO(
@@ -105,6 +114,8 @@ public class UserProfileService {
                 photoUrl,
                 vetDTO,
                 clinicDTO,
+                verificationStatus.name(),
+                verified,
                 pets,
                 services
         );
@@ -115,6 +126,7 @@ public class UserProfileService {
 
         return usersRepository.searchProviders(
                 List.of(EnumRole.VET, EnumRole.CLINIC),
+                VerificationStatus.VERIFIED,
                 normalizedQuery,
                 pageable
         ).map(this::toProviderSearchDTO);
@@ -136,7 +148,9 @@ public class UserProfileService {
                 photoUrl,
                 specialty,
                 city,
-                address
+                address,
+                VerificationStatus.VERIFIED.name(),
+                true
         );
     }
 
@@ -193,6 +207,16 @@ public class UserProfileService {
         }
 
         if (user.getRole() == EnumRole.CLINIC && user.getClinic() != null) {
+            boolean changingMapLocation = isChangingNumber(node, "latitude", user.getClinic().getLatitude())
+                    || isChangingNumber(node, "longitude", user.getClinic().getLongitude());
+
+            if (changingMapLocation && !providerVerificationService.isVerifiedProvider(user)) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Provider verification is required to set clinic location"
+                );
+            }
+
             if (node.has("latitude") && isValidNumber(node.get("latitude"))) {
                 user.getClinic().setLatitude(node.get("latitude").asDouble());
             }
@@ -208,5 +232,14 @@ public class UserProfileService {
         }
 
         usersRepository.save(user);
+    }
+
+    private boolean isChangingNumber(JsonNode node, String fieldName, Double currentValue) {
+        if (!node.has(fieldName) || !isValidNumber(node.get(fieldName))) {
+            return false;
+        }
+
+        double nextValue = node.get(fieldName).asDouble();
+        return currentValue == null || Double.compare(currentValue, nextValue) != 0;
     }
 }

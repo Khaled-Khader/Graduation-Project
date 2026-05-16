@@ -1,5 +1,6 @@
 package com.GraduationProject.GraduationProject.Service;
 
+import com.GraduationProject.GraduationProject.DTO.CloudinaryUploadResult;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -25,8 +26,10 @@ import java.util.TreeMap;
 public class CloudinaryService {
 
     private static final long MAX_IMAGE_SIZE_BYTES = 8L * 1024L * 1024L;
+    private static final long MAX_DOCUMENT_SIZE_BYTES = 8L * 1024L * 1024L;
     private static final String DEFAULT_UPLOAD_FOLDER = "petnexus/uploads";
     private static final String CHAT_UPLOAD_FOLDER = "petnexus/chat";
+    private static final String VERIFICATION_UPLOAD_FOLDER = "petnexus/verification";
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final String cloudName;
@@ -48,7 +51,24 @@ public class CloudinaryService {
     }
 
     public String uploadImage(MultipartFile file, String folder) {
+        return uploadImageWithMetadata(file, folder).secureUrl();
+    }
+
+    public CloudinaryUploadResult uploadImageWithMetadata(MultipartFile file, String folder) {
         validateImage(file);
+        return upload(file, folder, "image", "image");
+    }
+
+    public CloudinaryUploadResult uploadVerificationDocument(MultipartFile file, Long providerId) {
+        validateDocument(file);
+        String providerFolder = providerId == null
+                ? VERIFICATION_UPLOAD_FOLDER
+                : VERIFICATION_UPLOAD_FOLDER + "/" + providerId;
+
+        return upload(file, providerFolder, "auto", "verification-document");
+    }
+
+    private CloudinaryUploadResult upload(MultipartFile file, String folder, String resourceType, String defaultFilename) {
         String uploadFolder = normalizeFolder(folder);
 
         try {
@@ -58,7 +78,7 @@ public class CloudinaryService {
             signedParams.put("timestamp", String.valueOf(timestamp));
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new NamedByteArrayResource(file.getBytes(), file.getOriginalFilename()));
+            body.add("file", new NamedByteArrayResource(file.getBytes(), file.getOriginalFilename(), defaultFilename));
             body.add("api_key", apiKey);
             body.add("timestamp", String.valueOf(timestamp));
             body.add("folder", uploadFolder);
@@ -67,7 +87,7 @@ public class CloudinaryService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            String uploadUrl = "https://api.cloudinary.com/v1_1/" + cloudName + "/image/upload";
+            String uploadUrl = "https://api.cloudinary.com/v1_1/" + cloudName + "/" + resourceType + "/upload";
             ResponseEntity<Map> response = restTemplate.postForEntity(
                     uploadUrl,
                     new HttpEntity<>(body, headers),
@@ -76,14 +96,19 @@ public class CloudinaryService {
 
             Object secureUrl = response.getBody() != null ? response.getBody().get("secure_url") : null;
             if (!(secureUrl instanceof String imageUrl) || imageUrl.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Cloudinary did not return an image URL");
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Cloudinary did not return a secure URL");
             }
 
-            return imageUrl;
+            Object publicId = response.getBody() != null ? response.getBody().get("public_id") : null;
+            if (!(publicId instanceof String cloudinaryPublicId) || cloudinaryPublicId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Cloudinary did not return a public ID");
+            }
+
+            return new CloudinaryUploadResult(imageUrl, cloudinaryPublicId);
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to upload image to Cloudinary");
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Failed to upload file to Cloudinary");
         }
     }
 
@@ -128,6 +153,28 @@ public class CloudinaryService {
         }
     }
 
+    private void validateDocument(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification document is required");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !isSupportedDocumentContentType(contentType.toLowerCase())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only images, PDFs, and Word documents are allowed");
+        }
+
+        if (file.getSize() > MAX_DOCUMENT_SIZE_BYTES) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification document must be smaller than 8MB");
+        }
+    }
+
+    private boolean isSupportedDocumentContentType(String contentType) {
+        return contentType.startsWith("image/")
+                || contentType.equals("application/pdf")
+                || contentType.equals("application/msword")
+                || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    }
+
     private String sign(Map<String, String> params) {
         StringBuilder payload = new StringBuilder();
         params.forEach((key, value) -> {
@@ -154,9 +201,9 @@ public class CloudinaryService {
     private static class NamedByteArrayResource extends ByteArrayResource {
         private final String filename;
 
-        NamedByteArrayResource(byte[] byteArray, String filename) {
+        NamedByteArrayResource(byte[] byteArray, String filename, String defaultFilename) {
             super(byteArray);
-            this.filename = filename == null || filename.isBlank() ? "chat-image" : filename;
+            this.filename = filename == null || filename.isBlank() ? defaultFilename : filename;
         }
 
         @Override

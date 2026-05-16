@@ -82,7 +82,7 @@ public class JWTFilter extends OncePerRequestFilter {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
 
-            if (jwtService.validateToken(token, userDetails)) {
+            if (isUsableAccount(userDetails) && jwtService.validateToken(token, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
@@ -108,5 +108,12 @@ public class JWTFilter extends OncePerRequestFilter {
             }
         }
         return null;
+    }
+
+    private boolean isUsableAccount(UserDetails userDetails) {
+        return userDetails.isEnabled()
+                && userDetails.isAccountNonLocked()
+                && userDetails.isAccountNonExpired()
+                && userDetails.isCredentialsNonExpired();
     }
 }

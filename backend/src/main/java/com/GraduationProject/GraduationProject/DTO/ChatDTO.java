@@ -27,6 +27,10 @@ public class ChatDTO {
 
     private String providerRole; // VET or CLINIC
 
+    private String providerVerificationStatus;
+
+    private Boolean providerVerified;
+
     private String createdAt;
 
     private String lastMessageAt;

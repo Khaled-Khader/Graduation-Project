@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -70,6 +71,8 @@ public class UserProfileController {
         try {
             userProfileService.editUserProfile(updates);
             return ResponseEntity.ok(Map.of("Message", "Profile updated successfully"));
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (RuntimeException e) {
             // Return bad request if something goes wrong (invalid fields, user not found, etc.)
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

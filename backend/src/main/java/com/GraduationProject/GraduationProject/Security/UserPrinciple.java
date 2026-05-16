@@ -1,6 +1,7 @@
 package com.GraduationProject.GraduationProject.Security;
 
 import com.GraduationProject.GraduationProject.Entity.Users;
+import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -78,7 +79,7 @@ public class UserPrinciple implements UserDetails {
      */
     @Override
     public boolean isAccountNonExpired() {
-        return UserDetails.super.isAccountNonExpired();
+        return true;
     }
 
     /**
@@ -88,7 +89,7 @@ public class UserPrinciple implements UserDetails {
      */
     @Override
     public boolean isAccountNonLocked() {
-        return UserDetails.super.isAccountNonLocked();
+        return users.getAccountStatus() != UserAccountStatus.BANNED;
     }
 
     /**
@@ -98,7 +99,7 @@ public class UserPrinciple implements UserDetails {
      */
     @Override
     public boolean isCredentialsNonExpired() {
-        return UserDetails.super.isCredentialsNonExpired();
+        return true;
     }
 
     /**
@@ -108,6 +109,6 @@ public class UserPrinciple implements UserDetails {
      */
     @Override
     public boolean isEnabled() {
-        return UserDetails.super.isEnabled();
+        return users.getAccountStatus() == null || users.getAccountStatus() == UserAccountStatus.ACTIVE;
     }
 }

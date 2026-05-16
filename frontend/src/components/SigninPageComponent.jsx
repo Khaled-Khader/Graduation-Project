@@ -25,7 +25,7 @@
                 if(data && data.id) {
                 localStorage.setItem("clinicId", data.id);
                 }
-            navigate("/app");
+            navigate(data?.role === "ADMIN" ? "/admin" : "/app");
             },
             onError: (err) => {
             // show inline error under fields

@@ -8,6 +8,8 @@ public record ProviderSearchDTO(
         String photoUrl,
         String specialty,
         String city,
-        String address
+        String address,
+        String verificationStatus,
+        boolean verified
 ) {
 }

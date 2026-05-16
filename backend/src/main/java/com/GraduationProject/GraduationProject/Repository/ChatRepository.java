@@ -2,6 +2,7 @@ package com.GraduationProject.GraduationProject.Repository;
 
 import com.GraduationProject.GraduationProject.Entity.Chat;
 import com.GraduationProject.GraduationProject.Entity.Users;
+import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -29,6 +30,22 @@ public interface ChatRepository extends JpaRepository<Chat, Long> {
     @Query("SELECT c FROM Chat c WHERE c.owner = :user OR c.provider = :user "
             + "ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC")
     Page<Chat> findUserChats(@Param("user") Users user, Pageable pageable);
+
+    @Query("""
+            SELECT c FROM Chat c
+            WHERE (c.owner = :user OR c.provider = :user)
+              AND EXISTS (
+                    SELECT vr.id FROM VerificationRequest vr
+                    WHERE vr.provider = c.provider
+                      AND vr.status = :verifiedStatus
+              )
+            ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC
+            """)
+    Page<Chat> findUserChatsWithVerifiedProviders(
+            @Param("user") Users user,
+            @Param("verifiedStatus") VerificationStatus verifiedStatus,
+            Pageable pageable
+    );
 
     /**
      * Find all chats where user is the owner (pet owner)

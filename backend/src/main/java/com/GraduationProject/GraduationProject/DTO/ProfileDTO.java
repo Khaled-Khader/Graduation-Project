@@ -10,6 +10,8 @@ public record ProfileDTO(
         String photoUrl,
         VetDTO vetDTO,
         ClinicDTO clinicDTO,
+        String verificationStatus,
+        boolean verified,
         List<PetDTO>pets,
         List<ServiceDTO> services
 ) {

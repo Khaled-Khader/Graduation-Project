@@ -3,6 +3,7 @@ package com.GraduationProject.GraduationProject.Service;
 import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import jakarta.transaction.Transactional;
@@ -63,6 +64,7 @@ public class UsersService {
         users.setEmail(usersRegisterDTO.email());
         users.setPasswordHash(bCryptPasswordEncoder.encode(usersRegisterDTO.passwordHash()));
         users.setRole(usersRegisterDTO.role());
+        users.setAccountStatus(UserAccountStatus.ACTIVE);
 
 
         UserInfo userInfo = new UserInfo();
@@ -95,13 +97,15 @@ public class UsersService {
                 owner.setUsers(users);
                 users.setOwner(owner);
             }
+            case ADMIN -> {
+            }
         }
 
 
         usersRepository.save(users);
 
 
-        String jwt = jwtService.generateJWTToken(users.getEmail(), users.getRole().toString());
+        String jwt = jwtService.generateJWTToken(users.getEmail(), users.getRole());
 
         UserResponseDTO userResponseDTO = new UserResponseDTO(
                 users.getEmail(),
@@ -137,7 +141,7 @@ public class UsersService {
 
             Users user = usersRepository.findByEmail(userLoginDTO.email());
 
-            String jwt = jwtService.generateJWTToken(userLoginDTO.email(), user.getRole().name());
+            String jwt = jwtService.generateJWTToken(userLoginDTO.email(), user.getRole());
 
             UserResponseDTO userResponseDTO = new UserResponseDTO(
                     user.getEmail(),

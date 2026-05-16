@@ -2,6 +2,7 @@ package com.GraduationProject.GraduationProject.Controller;
 
 import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.Users;
+import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
 import com.GraduationProject.GraduationProject.Service.JWTService;
 import com.GraduationProject.GraduationProject.Service.UsersService;
@@ -112,6 +113,9 @@ public class UsersController {
 
         String email = jwtService.extractEmail(token);
         Users user = usersService.getUserByEmail(email);
+        if (user == null || (user.getAccountStatus() != null && user.getAccountStatus() != UserAccountStatus.ACTIVE)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         return ResponseEntity.ok(new UserResponseDTO(user.getEmail(), user.getRole().toString(), user.getId()));
     }

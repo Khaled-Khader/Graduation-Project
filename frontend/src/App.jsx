@@ -10,11 +10,13 @@ import PostsPage from "./pages/PostsPage"
 import MapPage from "./pages/MapPage"
 import ChatPage from "./pages/ChatPage"
 import ProfilePage from "./pages/ProfilePage"
+import AdminDashboardPage from "./pages/AdminDashboardPage"
 import MyAdoptionsPosts from "./components/MyAdoptionPosts"
 import NearbyClinicsPage from "./pages/NearbyClinicsPage"
 import { QueryClient,QueryClientProvider } from "@tanstack/react-query"
 
 import ProtectedRoleRouter from "./Auth/ProtectedRoleRouter"
+import ProtectedAdminRouter from "./Auth/ProtectedAdminRouter"
 import ProtectedRouter from "./Auth/ProtectedRouter"
 import { AuthProvider } from "./Auth/AuthProvider"
 import PublicRouter from "./Auth/PublicRouter"
@@ -34,7 +36,17 @@ export default function App(){
           <OpenPage/>
         </PublicRouter>
       },
-      {path:"/sign-in",element:<SigninPage/>},
+      {path:"/sign-in",element:
+      <PublicRouter>
+        <SigninPage/>
+      </PublicRouter>
+      },
+
+      {path:"/admin",element:
+      <ProtectedAdminRouter>
+        <AdminDashboardPage/>
+      </ProtectedAdminRouter>
+      },
 
 
       {path:"/roles",element:<RolesPage/>},

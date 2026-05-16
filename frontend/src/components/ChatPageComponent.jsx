@@ -14,6 +14,7 @@ export default function ChatPageComponent() {
     setSelectedChat,
     currentChat,
     chatLoading,
+    chatAccessRestricted,
     sendMessage,
     sendMessageLoading,
   } = useChatOperations();
@@ -45,6 +46,15 @@ export default function ChatPageComponent() {
 
   return (
     <div className="w-full">
+      {chatAccessRestricted ? (
+        <div className="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-6 text-amber-100">
+          <h1 className="text-xl font-bold">Verification required</h1>
+          <p className="mt-2 text-sm text-amber-50/80">
+            Chat unlocks after an admin approves your provider verification.
+          </p>
+        </div>
+      ) : (
+      <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="flex items-center gap-3 text-2xl font-bold text-[#E6ECFF] sm:text-3xl">
@@ -145,6 +155,8 @@ export default function ChatPageComponent() {
           )}
         </section>
       </div>
+      </>
+      )}
     </div>
   );
 }

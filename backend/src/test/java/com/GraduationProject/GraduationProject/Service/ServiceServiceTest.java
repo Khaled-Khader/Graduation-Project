@@ -32,6 +32,9 @@ import static org.mockito.Mockito.*;
         private UsersRepository usersRepository;
 
         @Mock
+        private ProviderVerificationService providerVerificationService;
+
+        @Mock
         private Authentication authentication;
 
         @Mock
@@ -105,6 +108,7 @@ import static org.mockito.Mockito.*;
                             "Pet grooming service"
                     );
 
+            when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
             when(serviceRepository.findByUser_Id(1L)).thenReturn(List.of(service));
 
             List<ServiceDTO> result = serviceService.getAllUserServices(1L);

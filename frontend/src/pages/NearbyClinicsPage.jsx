@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useNavigate } from "react-router-dom";
+import VerificationBadge from "../components/VerificationBadge";
 
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
@@ -132,7 +133,7 @@ export default function NearbyClinicsPage() {
     setError(null);
     try {
       const response = await fetch(
-        `http://localhost:8080/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=${radiusInKm}`,
+        `${import.meta.env.VITE_API_URL}/api/clinics/nearby?lat=${lat}&lng=${lng}&radius=${radiusInKm}`,
         {
           method: "GET",
           headers: {
@@ -206,9 +207,12 @@ export default function NearbyClinicsPage() {
                 <Popup>
                   <div className="flex flex-col gap-2 p-1 min-w-[150px]">
                     <div>
-                      <strong className="text-lg text-[#0A1B70]">
-                        {clinic.name}
-                      </strong>
+                      <div className="flex items-center gap-2">
+                        <strong className="text-lg text-[#0A1B70]">
+                          {clinic.clinicName || clinic.name}
+                        </strong>
+                        {clinic.verified && <VerificationBadge compact />}
+                      </div>
                       <p className="text-sm text-gray-600 mt-1">
                         {clinic.address
                           ? clinic.address

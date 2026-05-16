@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../Auth/AuthHook";
-import { http } from "../util/http";
+import { fetchMyVerificationStatus, http } from "../util/http";
 
 /**
  * Custom hook for managing chat operations
@@ -11,6 +11,16 @@ export function useChatOperations() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [selectedChat, setSelectedChat] = useState(null);
+  const isProvider = user?.role === "VET" || user?.role === "CLINIC";
+
+  const { data: verificationStatus } = useQuery({
+    queryKey: ["verification-status", user?.id],
+    queryFn: fetchMyVerificationStatus,
+    enabled: isProvider,
+    retry: false,
+  });
+
+  const canUseChat = !isProvider || verificationStatus?.verified === true;
 
   // Fetch user's chats
   const {
@@ -23,7 +33,7 @@ export function useChatOperations() {
     queryFn: async () => {
       return http("/chat/my-chats?page=0&size=20");
     },
-    enabled: !!user,
+    enabled: !!user && canUseChat,
   });
 
   // Fetch specific chat with messages
@@ -38,7 +48,7 @@ export function useChatOperations() {
       if (!selectedChat?.id) return null;
       return http(`/chat/${selectedChat.id}?page=0&size=50`);
     },
-    enabled: !!selectedChat?.id,
+    enabled: !!selectedChat?.id && canUseChat,
   });
 
   // Start new chat mutation
@@ -133,6 +143,7 @@ export function useChatOperations() {
     chatLoading,
     chatError,
     refetchChat,
+    chatAccessRestricted: isProvider && verificationStatus && !verificationStatus.verified,
     startChat: startChatMutation.mutate,
     startChatLoading: startChatMutation.isPending,
     sendMessage: sendMessageMutation.mutate,

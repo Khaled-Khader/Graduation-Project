@@ -78,16 +78,21 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/users/register", "/users/login", "/users/auth").permitAll()
                         // Role-based access control
+                        .requestMatchers("/admin", "/admin/**", "/api/admin", "/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/clinic/**").hasRole("CLINIC")
                         .requestMatchers("/vet/**").hasRole("VET")
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/owner/**").hasRole("OWNER")
                         .requestMatchers("/pet/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/service/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/post/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/comment/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/adoption-requests/**").hasRole("OWNER")
                         .requestMatchers("/chat/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/images/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         .requestMatchers("/notifications/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/user-profile/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/api/clinics/**").hasAnyRole("CLINIC", "VET", "OWNER")
+                        .requestMatchers("/verification-requests/**").hasAnyRole("CLINIC", "VET")
                         .requestMatchers("/ws", "/ws/**").hasAnyRole("CLINIC", "VET", "OWNER")
                         // Any other requests must be authenticated
                         .anyRequest().authenticated())

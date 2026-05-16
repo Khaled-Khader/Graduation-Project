@@ -1,8 +1,8 @@
-    import { Navigate } from "react-router-dom";
-    import { useAuth } from "./AuthHook";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "./AuthHook";
 
-    export default function PublicRouter({ children }) {
-    const { isAuthenticated, isLoading } = useAuth();
+export default function PublicRouter({ children }) {
+    const { user, isAuthenticated, isLoading } = useAuth();
 
 
     if (isLoading) {
@@ -15,8 +15,8 @@
 
     
     if (isAuthenticated) {
-        return <Navigate to="/app" replace />;
+        return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/app"} replace />;
     }
 
     return children;
-    }
+}

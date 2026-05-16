@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { http, LogoutFetchData } from "../util/http";
+import { fetchMyVerificationStatus, http, LogoutFetchData } from "../util/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../Auth/AuthHook";
 import { useChatSocket } from "../hooks/useChatSocket";
@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import LogoutDialog from "../components/posts/dialogs/LogoutDialog"; // <-- import the dialog
 import NotificationBell from "./NotificationBell";
+import VerificationBadge from "./VerificationBadge";
+import VerificationPromptButton from "./VerificationPromptButton";
 
 export default function MainNavigation() {
   const { user } = useAuth();
@@ -24,8 +26,19 @@ export default function MainNavigation() {
   const queryClient = useQueryClient();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [providerSearch, setProviderSearch] = useState("");
+  const isProvider = user?.role === "VET" || user?.role === "CLINIC";
 
-  useChatSocket(user);
+  const { data: verificationStatus } = useQuery({
+    queryKey: ["verification-status", user?.id],
+    queryFn: fetchMyVerificationStatus,
+    enabled: isProvider,
+    retry: false,
+  });
+
+  const providerVerified = !isProvider || verificationStatus?.verified === true;
+  const needsProviderVerification = isProvider && verificationStatus && !verificationStatus.verified;
+
+  useChatSocket(providerVerified ? user : null);
 
   const base =
     "flex items-center gap-2 px-3 py-2 rounded-full transition-all text-sm transform duration-150 ease-out active:scale-95 whitespace-nowrap";
@@ -48,7 +61,7 @@ export default function MainNavigation() {
   const { data: unreadChatCount = 0 } = useQuery({
     queryKey: ["chatUnreadCount"],
     queryFn: () => http("/chat/unread-total"),
-    enabled: !!user,
+    enabled: !!user && providerVerified,
   });
 
   const trimmedProviderSearch = providerSearch.trim();
@@ -167,9 +180,12 @@ export default function MainNavigation() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">
-                              {name || (isClinic ? "Clinic" : "Veterinarian")}
-                            </p>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p className="truncate text-sm font-semibold text-white">
+                                {name || (isClinic ? "Clinic" : "Veterinarian")}
+                              </p>
+                              {provider.verified && <VerificationBadge compact />}
+                            </div>
                             <p className="text-xs text-white/60 truncate">
                               {isClinic
                                 ? provider.city || "Clinic"
@@ -212,7 +228,7 @@ export default function MainNavigation() {
               <span className="hidden sm:inline">My Adoptions</span>
             </NavLink>
 
-            {user?.role === "CLINIC" ? (
+            {user?.role === "CLINIC" && providerVerified ? (
               <NavLink
                 to="/app/map"
                 className={({ isActive }) =>
@@ -234,22 +250,28 @@ export default function MainNavigation() {
               </NavLink>
             )}
 
-            <NavLink
-              to="/app/chat"
-              className={({ isActive }) =>
-                `${base} ${isActive ? active : inactive}`
-              }
-            >
-              <span className="relative inline-flex">
-                <MessagesSquare />
-                {unreadChatCount > 0 && (
-                  <span className="absolute -right-2 -top-2 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] leading-5 text-center font-bold shadow-md">
-                    {unreadChatCount > 99 ? "99+" : unreadChatCount}
-                  </span>
-                )}
-              </span>
-              <span className="hidden sm:inline">Chat</span>
-            </NavLink>
+            {providerVerified && (
+              <NavLink
+                to="/app/chat"
+                className={({ isActive }) =>
+                  `${base} ${isActive ? active : inactive}`
+                }
+              >
+                <span className="relative inline-flex">
+                  <MessagesSquare />
+                  {unreadChatCount > 0 && (
+                    <span className="absolute -right-2 -top-2 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] leading-5 text-center font-bold shadow-md">
+                      {unreadChatCount > 99 ? "99+" : unreadChatCount}
+                    </span>
+                  )}
+                </span>
+                <span className="hidden sm:inline">Chat</span>
+              </NavLink>
+            )}
+
+            {needsProviderVerification && (
+              <VerificationPromptButton compact />
+            )}
 
             <NotificationBell userId={user?.id} />
 

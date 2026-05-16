@@ -11,6 +11,9 @@ import { useDeletePet } from "../hooks/useDeletePet";
 import { useDeleteService } from "../hooks/useDeleteService";
 import EditProfileForm from "./EditProfileForm";
 import ChatButton from "./ChatButton";
+import VerificationBadge from "./VerificationBadge";
+import VerificationPromptButton from "./VerificationPromptButton";
+import { ShieldAlert } from "lucide-react";
 
 export default function ProfilePage() {
     const { userId } = useParams();
@@ -34,6 +37,8 @@ export default function ProfilePage() {
         currentUser?.id === Number(userId);
 
     const isVetOrClinic = profile.role === "VET" || profile.role === "CLINIC";
+    const isVerifiedProvider = isVetOrClinic && profile.verified;
+    const isUnverifiedProvider = isVetOrClinic && !profile.verified;
 
     function openPetDialog() {
         setDialogType("PET");
@@ -71,9 +76,21 @@ export default function ProfilePage() {
                     />
 
                     <div className="flex-1 text-center sm:text-left">
-                        <h1 className="text-4xl md:text-5xl font-extrabold text-[#4F7CFF] tracking-wide">
-                            {profile.userInfoDTO?.firstName} {profile.userInfoDTO?.lastName}
-                        </h1>
+                        <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                            <h1 className="text-4xl md:text-5xl font-extrabold text-[#4F7CFF] tracking-wide">
+                                {profile.userInfoDTO?.firstName} {profile.userInfoDTO?.lastName}
+                            </h1>
+                            {isVerifiedProvider && <VerificationBadge />}
+                            {isUnverifiedProvider && (
+                                <span
+                                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-200"
+                                    title="This provider is not verified yet"
+                                >
+                                    <ShieldAlert className="h-4 w-4" />
+                                    Not verified
+                                </span>
+                            )}
+                        </div>
 
                         {/* ROLE BADGE */}
                         <div className="mt-2 flex justify-center sm:justify-start">
@@ -115,6 +132,12 @@ export default function ProfilePage() {
                             </p>
                         )}
 
+                        {isUnverifiedProvider && (
+                            <div className="mt-4 max-w-xl rounded-xl border border-amber-300/25 bg-amber-400/10 p-4 text-sm text-amber-100">
+                                This provider has not been verified by PetNexus yet. Chat is disabled until verification is approved.
+                            </div>
+                        )}
+
                         {isOwnerProfile && (
                             <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
                                 <button
@@ -124,13 +147,17 @@ export default function ProfilePage() {
                                     Add Pet
                                 </button>
 
-                                {isVetOrClinic && (
+                                {isVerifiedProvider && (
                                     <button
                                         onClick={openServiceDialog}
                                         className="bg-white/10 border border-white/20 px-6 py-2.5 rounded-full font-semibold hover:bg-white/20"
                                     >
                                         Add Service
                                     </button>
+                                )}
+
+                                {isVetOrClinic && !isVerifiedProvider && (
+                                    <VerificationPromptButton />
                                 )}
 
                                 <button
@@ -147,6 +174,8 @@ export default function ProfilePage() {
                             <div className="mt-6">
                                 <ChatButton
                                     providerId={Number(userId)}
+                                    disabled={!isVerifiedProvider}
+                                    disabledReason="This provider is not verified yet. Chat will be available after admin approval."
                                 />
                             </div>
                         )}

@@ -1,5 +1,6 @@
 package com.GraduationProject.GraduationProject.Service;
 
+import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -37,6 +38,14 @@ public class JWTService {
      * @param role  User's role (added as a custom claim)
      * @return A signed JWT token string
      */
+    public String generateJWTToken(String email, EnumRole role) {
+        if (role == null) {
+            throw new IllegalArgumentException("Role is required");
+        }
+
+        return generateJWTToken(email, role.name());
+    }
+
     public String generateJWTToken(String email, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
@@ -62,6 +71,16 @@ public class JWTService {
     }
 
     /**
+     * Extracts the role claim from a JWT token as a supported application role.
+     *
+     * @param token JWT token
+     * @return Role as an EnumRole
+     */
+    public EnumRole extractEnumRole(String token) {
+        return EnumRole.valueOf(extractRole(token));
+    }
+
+    /**
      * Extracts the email (subject) from a JWT token.
      *
      * @param token JWT token
@@ -84,7 +103,20 @@ public class JWTService {
      */
     public boolean validateToken(String token, UserDetails userDetails) {
         final String email = extractEmail(token);
-        return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        final String role = extractRole(token);
+
+        return email.equals(userDetails.getUsername())
+                && roleMatchesUser(role, userDetails)
+                && !isTokenExpired(token);
+    }
+
+    private boolean roleMatchesUser(String role, UserDetails userDetails) {
+        if (role == null) {
+            return false;
+        }
+
+        return userDetails.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_" + role));
     }
 
 

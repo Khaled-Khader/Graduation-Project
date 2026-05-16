@@ -1,6 +1,7 @@
 package com.GraduationProject.GraduationProject.Entity;
 
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,10 @@ public class Users {
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private EnumRole role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_status", length = 30, columnDefinition = "varchar(30)")
+    private UserAccountStatus accountStatus = UserAccountStatus.ACTIVE;
 
     @OneToOne(mappedBy = "users", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserInfo userInfo;

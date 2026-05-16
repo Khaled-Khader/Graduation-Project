@@ -2,6 +2,7 @@ package com.GraduationProject.GraduationProject.Repository;
 
 import com.GraduationProject.GraduationProject.Entity.Message;
 import com.GraduationProject.GraduationProject.Entity.Users;
+import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,6 +34,23 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
               AND (m.chat.owner = :user OR m.chat.provider = :user)
             """)
     Long countUnreadMessagesForUser(@Param("user") Users user);
+
+    @Query("""
+            SELECT COUNT(m)
+            FROM Message m
+            WHERE m.isRead = false
+              AND m.sender <> :user
+              AND (m.chat.owner = :user OR m.chat.provider = :user)
+              AND EXISTS (
+                    SELECT vr.id FROM VerificationRequest vr
+                    WHERE vr.provider = m.chat.provider
+                      AND vr.status = :verifiedStatus
+              )
+            """)
+    Long countUnreadMessagesForUserWithVerifiedProviders(
+            @Param("user") Users user,
+            @Param("verifiedStatus") VerificationStatus verifiedStatus
+    );
 
     @Modifying
     @Query("""

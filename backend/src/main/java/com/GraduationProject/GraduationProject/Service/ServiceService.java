@@ -25,11 +25,14 @@ public class ServiceService {
 
     private final ServiceRepository serviceRepository;
     private final UsersRepository usersRepository;
+    private final ProviderVerificationService providerVerificationService;
 
     public ServiceService(ServiceRepository serviceRepository,
-                          UsersRepository usersRepository) {
+                          UsersRepository usersRepository,
+                          ProviderVerificationService providerVerificationService) {
         this.serviceRepository = serviceRepository;
         this.usersRepository = usersRepository;
+        this.providerVerificationService = providerVerificationService;
     }
 
 
@@ -57,6 +60,8 @@ public class ServiceService {
             throw new RuntimeException("Only vets or clinics can create services");
         }
 
+        providerVerificationService.requireVerifiedProvider(user, "add services");
+
 
         com.GraduationProject.GraduationProject.Entity.Service service =
                 new com.GraduationProject.GraduationProject.Entity.Service(
@@ -80,6 +85,15 @@ public class ServiceService {
      * @return list of ServiceDTO
      */
     public List<ServiceDTO> getAllUserServices(Long userId) {
+        Users provider = usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (providerVerificationService.isProvider(provider)
+                && !providerVerificationService.isVerifiedProvider(provider)
+                && !isSelfOrAdmin(provider)) {
+            throw new RuntimeException("Provider services are not publicly available");
+        }
+
         return serviceRepository.findByUser_Id(userId)
                 .stream()
                 .map(service -> new ServiceDTO(
@@ -89,6 +103,17 @@ public class ServiceService {
                         service.getDescription()
                 ))
                 .toList();
+    }
+
+    private boolean isSelfOrAdmin(Users provider) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserPrinciple userPrinciple)) {
+            return false;
+        }
+
+        return provider.getId().equals(userPrinciple.getId())
+                || userPrinciple.getAuthorities().stream()
+                        .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 
 

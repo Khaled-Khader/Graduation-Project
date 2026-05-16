@@ -5,7 +5,8 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import { useAuth } from '../Auth/AuthHook';
-import { http } from '../util/http';
+import { fetchMyVerificationStatus, http } from '../util/http';
+import { useQuery } from '@tanstack/react-query';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -25,9 +26,10 @@ const MapUpdater = ({ center }) => {
 };
 
 
-const LocationMarker = ({ position, setPosition }) => {
+const LocationMarker = ({ position, setPosition, disabled }) => {
     useMapEvents({
         click(e) {
+            if (disabled) return;
             setPosition([e.latlng.lat, e.latlng.lng]);
         },
     });
@@ -40,12 +42,13 @@ const LocationMarker = ({ position, setPosition }) => {
 };
 
 
-const SearchBar = ({ onSearch }) => {
+const SearchBar = ({ onSearch, disabled }) => {
     const [query, setQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (disabled) return;
         if (!query.trim()) return;
 
         setIsSearching(true);
@@ -73,12 +76,13 @@ const SearchBar = ({ onSearch }) => {
                 type="text" 
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                disabled={disabled}
                 placeholder="Search for a city, street, or landmark (e.g., Amman, Irbid)..." 
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black disabled:cursor-not-allowed disabled:bg-gray-100"
             />
             <button 
                 type="submit" 
-                disabled={isSearching}
+                disabled={isSearching || disabled}
                 className="px-6 py-2 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-900 transition disabled:opacity-50"
             >
                 {isSearching ? 'Searching...' : 'Search'}
@@ -94,6 +98,17 @@ export default function MapPage() {
     const [saveMessage, setSaveMessage] = useState("");
     const [saveError, setSaveError] = useState("");
     const { user } = useAuth();
+    const isClinic = user?.role === "CLINIC";
+
+    const { data: verificationStatus, isLoading: verificationLoading } = useQuery({
+        queryKey: ["verification-status", user?.id],
+        queryFn: fetchMyVerificationStatus,
+        enabled: isClinic,
+        retry: false,
+    });
+
+    const isVerifiedClinic = isClinic && verificationStatus?.verified === true;
+    const locationLocked = isClinic && (!isVerifiedClinic || verificationLoading);
 
     const handleSaveLocation = async () => {
         setSaveMessage("");
@@ -101,6 +116,11 @@ export default function MapPage() {
 
         if (user?.role !== "CLINIC") {
             setSaveError("Only clinic accounts can save clinic locations.");
+            return;
+        }
+
+        if (!isVerifiedClinic) {
+            setSaveError("Admin verification is required before saving a clinic location.");
             return;
         }
 
@@ -142,7 +162,13 @@ export default function MapPage() {
                 <p className="text-gray-500 text-sm mb-2">Search for your city or click on the map to pinpoint the exact location of your clinic</p>
                 
                 
-                <SearchBar onSearch={setPosition} />
+                {locationLocked && (
+                    <p className="w-full rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                        Admin verification is required before setting a public clinic location.
+                    </p>
+                )}
+
+                <SearchBar onSearch={setPosition} disabled={locationLocked} />
 
                 <div className="w-full h-[500px] rounded-lg overflow-hidden border-2 border-gray-200 z-0 relative">
                     <MapContainer 
@@ -156,13 +182,13 @@ export default function MapPage() {
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
                         <MapUpdater center={position} />
-                        <LocationMarker position={position} setPosition={setPosition} />
+                        <LocationMarker position={position} setPosition={setPosition} disabled={locationLocked} />
                     </MapContainer>
                 </div>
 
                 <button 
                     onClick={handleSaveLocation}
-                    disabled={isSaving}
+                    disabled={isSaving || locationLocked}
                     className="mt-4 w-full sm:w-auto px-10 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     {isSaving ? "Saving..." : "Save Location"}

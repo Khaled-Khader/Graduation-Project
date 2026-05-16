@@ -85,12 +85,24 @@ export async function addPet(data) {
 }
 
 export async function addService(data) {
-    return fetch(`${BASE_URL}/service`, {
+    const response = await fetch(`${BASE_URL}/service`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         credentials: "include",
     });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to add service");
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+        return response.json();
+    }
+
+    return response.text();
 }
 
 
@@ -381,5 +393,95 @@ export async function CompleteAdoptionPost(postId){
     return true
 }
 
+export async function fetchMyVerificationStatus() {
+    return http("/verification-requests/me");
+}
+
+export async function skipProviderVerification() {
+    return http("/verification-requests/skip", {
+        method: "POST",
+    });
+}
+
+export async function uploadVerificationDocuments({ files, documentType }) {
+    const formData = new FormData();
+
+    Array.from(files || []).forEach((file) => {
+        formData.append("files", file);
+    });
+
+    if (documentType) {
+        formData.append("documentType", documentType);
+    }
+
+    const response = await fetch(`${BASE_URL}/verification-requests/documents`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to upload verification documents");
+    }
+
+    return response.json();
+}
+
+export async function fetchAdminUsers({ query = "", role = "", accountStatus = "", page = 0, size = 20 } = {}) {
+    const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+    });
+
+    if (query) params.set("query", query);
+    if (role) params.set("role", role);
+    if (accountStatus) params.set("accountStatus", accountStatus);
+
+    return http(`/api/admin/users?${params.toString()}`);
+}
+
+export async function updateAdminUserStatus(userId, action) {
+    return http(`/api/admin/users/${userId}/${action}`, {
+        method: "PUT",
+    });
+}
+
+export async function fetchAdminVerifications(status = "") {
+    const url = status
+        ? `/api/admin/verifications?status=${encodeURIComponent(status)}`
+        : "/api/admin/verifications";
+
+    return http(url);
+}
+
+export async function approveAdminVerification(requestId) {
+    return http(`/api/admin/verifications/${requestId}/approve`, {
+        method: "PUT",
+    });
+}
+
+export async function rejectAdminVerification(requestId, rejectionReason) {
+    return http(`/api/admin/verifications/${requestId}/reject`, {
+        method: "PUT",
+        body: JSON.stringify({ rejectionReason }),
+    });
+}
+
+export async function fetchAdminPosts({ page = 0, size = 20, sortBy = "latest" } = {}) {
+    const params = new URLSearchParams({
+        page: String(page),
+        size: String(size),
+        sortBy,
+    });
+
+    return http(`/api/admin/posts?${params.toString()}`);
+}
+
+export async function deleteAdminPost(postId) {
+    return http(`/api/admin/posts/${postId}`, {
+        method: "DELETE",
+    });
+}
 
 

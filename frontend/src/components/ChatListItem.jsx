@@ -1,5 +1,6 @@
 import { MessageCircle } from "lucide-react";
 import { useAuth } from "../Auth/AuthHook";
+import VerificationBadge from "./VerificationBadge";
 
 export default function ChatListItem({ chat, isSelected, onSelect }) {
   const { user } = useAuth();
@@ -11,6 +12,7 @@ export default function ChatListItem({ chat, isSelected, onSelect }) {
           name: chat.providerName,
           image: chat.providerProfileImage,
           role: chat.providerRole,
+          verified: chat.providerVerified,
         }
       : {
           name: chat.ownerName,
@@ -50,13 +52,16 @@ export default function ChatListItem({ chat, isSelected, onSelect }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
-            <h3
-              className={`text-sm font-semibold truncate ${
-                hasUnread ? "text-white" : "text-[#E6ECFF]"
-              }`}
-            >
-              {otherUser?.name}
-            </h3>
+            <div className="flex min-w-0 items-center gap-2">
+              <h3
+                className={`truncate text-sm font-semibold ${
+                  hasUnread ? "text-white" : "text-[#E6ECFF]"
+                }`}
+              >
+                {otherUser?.name}
+              </h3>
+              {otherUser?.verified && <VerificationBadge compact />}
+            </div>
             <div className="flex shrink-0 items-center gap-2">
               {hasUnread && (
                 <span className="min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white">

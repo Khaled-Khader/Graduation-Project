@@ -4,6 +4,7 @@ import com.GraduationProject.GraduationProject.DTO.*;
 import com.GraduationProject.GraduationProject.Entity.*;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Enum.NotificationType;
+import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import com.GraduationProject.GraduationProject.Repository.ChatRepository;
 import com.GraduationProject.GraduationProject.Repository.MessageRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
@@ -38,6 +39,7 @@ public class ChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
     private final CloudinaryService cloudinaryService;
+    private final ProviderVerificationService providerVerificationService;
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final String E2EE_MESSAGE_PREFIX = "e2ee:v1:";
@@ -47,13 +49,15 @@ public class ChatService {
             UsersRepository usersRepository,
             SimpMessagingTemplate messagingTemplate,
             NotificationService notificationService,
-            CloudinaryService cloudinaryService) {
+            CloudinaryService cloudinaryService,
+            ProviderVerificationService providerVerificationService) {
         this.chatRepository = chatRepository;
         this.messageRepository = messageRepository;
         this.usersRepository = usersRepository;
         this.messagingTemplate = messagingTemplate;
         this.notificationService = notificationService;
         this.cloudinaryService = cloudinaryService;
+        this.providerVerificationService = providerVerificationService;
     }
 
     public ChatDTO startChat(StartChatDTO dto) {
@@ -69,6 +73,8 @@ public class ChatService {
         if (!provider.getRole().equals(EnumRole.VET) && !provider.getRole().equals(EnumRole.CLINIC)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Can only chat with veterinarians or clinics");
         }
+
+        providerVerificationService.requireVerifiedProvider(provider, "use chat");
 
         if (Objects.equals(currentUser.getId(), provider.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot start a chat with yourself");
@@ -106,6 +112,8 @@ public class ChatService {
         if (!Boolean.TRUE.equals(chat.getIsActive())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This chat is closed");
         }
+
+        requireChatProviderVerified(chat);
 
         if (currentUser.getRole().equals(EnumRole.VET) || currentUser.getRole().equals(EnumRole.CLINIC)) {
             if (!Objects.equals(currentUser.getId(), chat.getProvider().getId())) {
@@ -165,12 +173,22 @@ public class ChatService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This chat is closed");
         }
 
+        requireChatProviderVerified(chat);
+
         return new ChatImageUploadResponseDTO(cloudinaryService.uploadChatImage(file));
     }
 
     public Page<ChatDTO> getUserChats(Pageable pageable) {
         Users currentUser = getCurrentUser();
-        Page<Chat> chats = chatRepository.findUserChats(currentUser, pageable);
+        if (providerVerificationService.isProvider(currentUser)) {
+            providerVerificationService.requireVerifiedProvider(currentUser, "use chat");
+        }
+
+        Page<Chat> chats = chatRepository.findUserChatsWithVerifiedProviders(
+                currentUser,
+                VerificationStatus.VERIFIED,
+                pageable
+        );
         return chats.map(chat -> convertToDTO(chat, currentUser));
     }
 
@@ -183,6 +201,8 @@ public class ChatService {
         if (!isUserInChat(chat, currentUser)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not part of this chat");
         }
+
+        requireChatProviderVerified(chat);
 
         markChatMessagesAsRead(chatId, currentUser);
         return convertToDTOWithMessages(chat, pageable, currentUser);
@@ -198,6 +218,8 @@ public class ChatService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not part of this chat");
         }
 
+        requireChatProviderVerified(chat);
+
         markChatMessagesAsRead(chatId, currentUser);
         Page<Message> messages = messageRepository.findByChatIdOrderByCreatedAtAsc(chatId, pageable);
 
@@ -206,7 +228,11 @@ public class ChatService {
 
     public Long getTotalUnreadMessageCount() {
         Users currentUser = getCurrentUser();
-        return messageRepository.countUnreadMessagesForUser(currentUser);
+        if (providerVerificationService.isProvider(currentUser)) {
+            providerVerificationService.requireVerifiedProvider(currentUser, "use chat");
+        }
+
+        return countUnreadMessagesForVisibleChats(currentUser);
     }
 
     public Long getUnreadMessageCount(Long chatId) {
@@ -217,6 +243,8 @@ public class ChatService {
         if (!isUserInChat(chat, currentUser)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not part of this chat");
         }
+
+        requireChatProviderVerified(chat);
 
         return messageRepository.countByChat_IdAndIsReadFalseAndSender_IdNot(chatId, currentUser.getId());
     }
@@ -230,6 +258,8 @@ public class ChatService {
         if (!isUserInChat(chat, currentUser)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not part of this chat");
         }
+
+        requireChatProviderVerified(chat);
 
         chat.setIsActive(false);
         chatRepository.save(chat);
@@ -251,10 +281,14 @@ public class ChatService {
                 || Objects.equals(chat.getProvider().getId(), user.getId());
     }
 
+    private void requireChatProviderVerified(Chat chat) {
+        providerVerificationService.requireVerifiedProvider(chat.getProvider(), "use chat");
+    }
+
     private void markChatMessagesAsRead(Long chatId, Users currentUser) {
         int updatedRows = messageRepository.markChatMessagesAsRead(chatId, currentUser.getId(), LocalDateTime.now());
         if (updatedRows > 0) {
-            Long unreadCount = messageRepository.countUnreadMessagesForUser(currentUser);
+            Long unreadCount = countUnreadMessagesForVisibleChats(currentUser);
             ChatRealtimeEventDTO event = new ChatRealtimeEventDTO(
                     "READ",
                     chatId,
@@ -272,7 +306,7 @@ public class ChatService {
                 chat.getId(),
                 convertToDTO(chat, chat.getOwner()),
                 messageDTO,
-                messageRepository.countUnreadMessagesForUser(chat.getOwner())
+                countUnreadMessagesForVisibleChats(chat.getOwner())
         ));
 
         sendToUser(chat.getProvider(), new ChatRealtimeEventDTO(
@@ -280,8 +314,15 @@ public class ChatService {
                 chat.getId(),
                 convertToDTO(chat, chat.getProvider()),
                 messageDTO,
-                messageRepository.countUnreadMessagesForUser(chat.getProvider())
+                countUnreadMessagesForVisibleChats(chat.getProvider())
         ));
+    }
+
+    private Long countUnreadMessagesForVisibleChats(Users user) {
+        return messageRepository.countUnreadMessagesForUserWithVerifiedProviders(
+                user,
+                VerificationStatus.VERIFIED
+        );
     }
 
     private void sendToUser(Users user, ChatRealtimeEventDTO event) {
@@ -337,6 +378,9 @@ public class ChatService {
         dto.setProviderName(providerName);
         dto.setProviderProfileImage(providerImage);
         dto.setProviderRole(provider.getRole().toString());
+        VerificationStatus providerStatus = providerVerificationService.getProviderStatus(provider);
+        dto.setProviderVerificationStatus(providerStatus != null ? providerStatus.name() : null);
+        dto.setProviderVerified(providerStatus == VerificationStatus.VERIFIED);
         dto.setCreatedAt(chat.getCreatedAt().format(FORMATTER));
         dto.setLastMessageAt(chat.getLastMessageAt() != null ? chat.getLastMessageAt().format(FORMATTER) : null);
         dto.setIsActive(chat.getIsActive());

@@ -10,6 +10,7 @@ import com.GraduationProject.GraduationProject.Entity.Message;
 import com.GraduationProject.GraduationProject.Entity.UserInfo;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import com.GraduationProject.GraduationProject.Repository.ChatRepository;
 import com.GraduationProject.GraduationProject.Repository.MessageRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
@@ -62,6 +63,9 @@ class ChatServiceTest {
     private CloudinaryService cloudinaryService;
 
     @Mock
+    private ProviderVerificationService providerVerificationService;
+
+    @Mock
     private Authentication authentication;
 
     @Mock
@@ -91,7 +95,10 @@ class ChatServiceTest {
         authenticateAs(owner);
         when(usersRepository.findById(vet.getId())).thenReturn(Optional.of(vet));
         when(chatRepository.findChatBetween(owner, vet)).thenReturn(Optional.empty());
-        when(messageRepository.countUnreadMessagesForUser(any(Users.class))).thenReturn(0L);
+        when(messageRepository.countUnreadMessagesForUserWithVerifiedProviders(
+                any(Users.class),
+                eq(VerificationStatus.VERIFIED)
+        )).thenReturn(0L);
         when(chatRepository.save(any(Chat.class))).thenAnswer(invocation -> {
             Chat chat = invocation.getArgument(0);
             chat.setId(10L);
@@ -160,7 +167,10 @@ class ChatServiceTest {
         Chat chat = chat(30L, owner, vet);
 
         when(chatRepository.findById(chat.getId())).thenReturn(Optional.of(chat));
-        when(messageRepository.countUnreadMessagesForUser(any(Users.class))).thenReturn(1L);
+        when(messageRepository.countUnreadMessagesForUserWithVerifiedProviders(
+                any(Users.class),
+                eq(VerificationStatus.VERIFIED)
+        )).thenReturn(1L);
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> {
             Message message = invocation.getArgument(0);
             message.setId(100L);
@@ -203,7 +213,10 @@ class ChatServiceTest {
         String imageUrl = "https://res.cloudinary.com/dn1xklmba/image/upload/v1/petnexus/chat/test.jpg";
 
         when(chatRepository.findById(chat.getId())).thenReturn(Optional.of(chat));
-        when(messageRepository.countUnreadMessagesForUser(any(Users.class))).thenReturn(1L);
+        when(messageRepository.countUnreadMessagesForUserWithVerifiedProviders(
+                any(Users.class),
+                eq(VerificationStatus.VERIFIED)
+        )).thenReturn(1L);
         when(cloudinaryService.isManagedImageUrl(imageUrl)).thenReturn(true);
         when(messageRepository.save(any(Message.class))).thenAnswer(invocation -> {
             Message message = invocation.getArgument(0);
@@ -244,7 +257,10 @@ class ChatServiceTest {
         when(chatRepository.findById(chat.getId())).thenReturn(Optional.of(chat));
         when(messageRepository.markChatMessagesAsRead(eq(chat.getId()), eq(vet.getId()), any(LocalDateTime.class)))
                 .thenReturn(1);
-        when(messageRepository.countUnreadMessagesForUser(vet)).thenReturn(0L);
+        when(messageRepository.countUnreadMessagesForUserWithVerifiedProviders(
+                vet,
+                VerificationStatus.VERIFIED
+        )).thenReturn(0L);
         when(messageRepository.findByChatIdOrderByCreatedAtAsc(eq(chat.getId()), any()))
                 .thenReturn(new PageImpl<>(List.of(message)));
 
@@ -263,7 +279,10 @@ class ChatServiceTest {
     @Test
     void getTotalUnreadMessageCount_shouldReturnCurrentUserUnreadCount() {
         authenticateAs(owner);
-        when(messageRepository.countUnreadMessagesForUser(owner)).thenReturn(5L);
+        when(messageRepository.countUnreadMessagesForUserWithVerifiedProviders(
+                owner,
+                VerificationStatus.VERIFIED
+        )).thenReturn(5L);
 
         Long result = chatService.getTotalUnreadMessageCount();
 

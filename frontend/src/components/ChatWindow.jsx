@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../Auth/AuthHook";
 import { decryptChatMessage, encryptChatMessage } from "../util/chatCrypto";
 import { uploadChatImage } from "../util/http";
+import VerificationBadge from "./VerificationBadge";
 
 export default function ChatWindow({
   chat,
@@ -87,6 +88,7 @@ export default function ChatWindow({
             name: activeChat?.providerName,
             image: activeChat?.providerProfileImage,
             role: activeChat?.providerRole,
+            verified: activeChat?.providerVerified,
           }
         : {
             id: activeChat?.ownerId,
@@ -202,9 +204,12 @@ export default function ChatWindow({
           )}
 
           <div className="min-w-0">
-            <h3 className="truncate font-semibold text-[#E6ECFF]">
-              {otherUser?.name || "Chat"}
-            </h3>
+            <div className="flex min-w-0 items-center gap-2">
+              <h3 className="truncate font-semibold text-[#E6ECFF]">
+                {otherUser?.name || "Chat"}
+              </h3>
+              {otherUser?.verified && <VerificationBadge compact />}
+            </div>
             <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-2">
               <span className="text-xs text-[#9AA6E8]">{otherUser?.role}</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">

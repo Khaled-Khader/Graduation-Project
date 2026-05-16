@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useChatOperations } from "../hooks/useChatOperations";
 import { useAuth } from "../Auth/AuthHook";
 
-export default function ChatButton({ providerId, onChatStarted }) {
+export default function ChatButton({ providerId, disabled = false, disabledReason = "", onChatStarted }) {
   const { startChat, startChatLoading } = useChatOperations();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -41,8 +41,13 @@ export default function ChatButton({ providerId, onChatStarted }) {
   return (
     <>
       <button
-        onClick={() => setIsConfirming(true)}
-        disabled={startChatLoading}
+        onClick={() => {
+          if (!disabled) {
+            setIsConfirming(true);
+          }
+        }}
+        disabled={startChatLoading || disabled}
+        title={disabled ? disabledReason : "Start chat"}
         className="
           flex items-center gap-2
           bg-[#6B8CFF] hover:bg-[#6B8CFF]/80
@@ -55,8 +60,14 @@ export default function ChatButton({ providerId, onChatStarted }) {
         "
       >
         <MessageCircle className="w-5 h-5" />
-        Start Chat
+        {disabled ? "Chat unavailable" : "Start Chat"}
       </button>
+
+      {disabled && disabledReason && (
+        <p className="mt-2 max-w-sm text-sm text-amber-200/90">
+          {disabledReason}
+        </p>
+      )}
 
       {/* Confirmation Modal */}
       {isConfirming && (

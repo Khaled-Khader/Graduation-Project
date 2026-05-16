@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { fetchMyVerificationStatus, http, LogoutFetchData } from "../util/http";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchMyVerificationStatus, http } from "../util/http";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../Auth/AuthHook";
 import { useChatSocket } from "../hooks/useChatSocket";
+import { useLogout } from "../hooks/useLogout";
 import {
   HouseHeart,
   PawPrint,
@@ -23,7 +24,7 @@ import VerificationPromptButton from "./VerificationPromptButton";
 export default function MainNavigation() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { logout, isPending: isLoggingOut } = useLogout();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [providerSearch, setProviderSearch] = useState("");
   const isProvider = user?.role === "VET" || user?.role === "CLINIC";
@@ -44,19 +45,6 @@ export default function MainNavigation() {
     "flex items-center gap-2 px-3 py-2 rounded-full transition-all text-sm transform duration-150 ease-out active:scale-95 whitespace-nowrap";
   const active = "bg-white text-[#0A0F29] shadow-md font-semibold";
   const inactive = "text-white/80 hover:text-white hover:bg-white/10";
-
-  const { mutate: logout, isLoading } = useMutation({
-    mutationFn: LogoutFetchData,
-    onSuccess: async () => {
-      await queryClient.cancelQueries();
-      queryClient.setQueryData(["user"], null);
-      queryClient.clear();
-      navigate("/sign-in", { replace: true });
-    },
-    onError: (error) => {
-      console.error("Logout error:", error);
-    },
-  });
 
   const { data: unreadChatCount = 0 } = useQuery({
     queryKey: ["chatUnreadCount"],
@@ -300,7 +288,7 @@ export default function MainNavigation() {
         open={showLogoutDialog}
         onCancel={() => setShowLogoutDialog(false)}
         onConfirm={handleConfirmLogout}
-        isLoading={isLoading}
+        isLoading={isLoggingOut}
       />
     </>
   );

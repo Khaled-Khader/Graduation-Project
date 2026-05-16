@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import {
   Ban,
   CheckCircle2,
@@ -12,13 +11,14 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
+import LogoutDialog from "../components/posts/dialogs/LogoutDialog";
+import { useLogout } from "../hooks/useLogout";
 import {
   approveAdminVerification,
   deleteAdminPost,
   fetchAdminPosts,
   fetchAdminUsers,
   fetchAdminVerifications,
-  LogoutFetchData,
   rejectAdminVerification,
   updateAdminUserStatus,
 } from "../util/http";
@@ -96,36 +96,46 @@ function ActionButton({ children, tone = "neutral", ...props }) {
 }
 
 function AdminHeader() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const logout = useMutation({
-    mutationFn: LogoutFetchData,
-    onSuccess: async () => {
-      await queryClient.cancelQueries();
-      queryClient.clear();
-      navigate("/sign-in", { replace: true });
-    },
-  });
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const { logout, isPending: isLoggingOut } = useLogout();
+
+  function handleConfirmLogout() {
+    setShowLogoutDialog(false);
+    logout();
+  }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071323]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1CE0B7]/15 text-[#1CE0B7]">
-            <ShieldCheck size={22} />
+    <>
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#071323]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1CE0B7]/15 text-[#1CE0B7]">
+              <ShieldCheck size={22} />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
+              <p className="text-sm text-white/55">PetNexus moderation console</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
-            <p className="text-sm text-white/55">PetNexus moderation console</p>
-          </div>
-        </div>
 
-        <ActionButton tone="danger" onClick={() => logout.mutate()} disabled={logout.isPending}>
-          <LogOut size={17} />
-          {logout.isPending ? "Logging out..." : "Logout"}
-        </ActionButton>
-      </div>
-    </header>
+          <ActionButton
+            tone="danger"
+            onClick={() => setShowLogoutDialog(true)}
+            disabled={isLoggingOut}
+          >
+            <LogOut size={17} />
+            {isLoggingOut ? "Logging out..." : "Logout"}
+          </ActionButton>
+        </div>
+      </header>
+
+      <LogoutDialog
+        open={showLogoutDialog}
+        onCancel={() => setShowLogoutDialog(false)}
+        onConfirm={handleConfirmLogout}
+        isLoading={isLoggingOut}
+      />
+    </>
   );
 }
 

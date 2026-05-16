@@ -6,7 +6,7 @@ import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import com.GraduationProject.GraduationProject.Exception.EmailAlreadyExistsException;
 import com.GraduationProject.GraduationProject.Service.JWTService;
 import com.GraduationProject.GraduationProject.Service.UsersService;
-import jakarta.servlet.http.HttpServletResponse;
+import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -111,10 +111,20 @@ public class UsersController {
     public ResponseEntity<?> currentUser(@CookieValue(name = "authToken", required = false) String token) {
         if (token == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        String email = jwtService.extractEmail(token);
+        String email;
+        try {
+            email = jwtService.extractEmail(token);
+        } catch (JwtException | IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header(HttpHeaders.SET_COOKIE, authCookie("", 0).toString())
+                    .build();
+        }
+
         Users user = usersService.getUserByEmail(email);
         if (user == null || (user.getAccountStatus() != null && user.getAccountStatus() != UserAccountStatus.ACTIVE)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header(HttpHeaders.SET_COOKIE, authCookie("", 0).toString())
+                    .build();
         }
 
         return ResponseEntity.ok(new UserResponseDTO(user.getEmail(), user.getRole().toString(), user.getId()));

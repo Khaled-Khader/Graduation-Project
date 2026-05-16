@@ -76,7 +76,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests
                         -> authorizeRequests
                         // Public endpoints
-                        .requestMatchers("/users/register", "/users/login", "/users/auth").permitAll()
+                        .requestMatchers("/users/register", "/users/login", "/users/logout", "/users/auth").permitAll()
                         // Role-based access control
                         .requestMatchers("/admin", "/admin/**", "/api/admin", "/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/clinic/**").hasRole("CLINIC")

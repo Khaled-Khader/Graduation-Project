@@ -4,9 +4,11 @@ import {
   CheckCircle2,
   ExternalLink,
   Heart,
+  Megaphone,
   MessageCircle,
   MessageSquareText,
   PawPrint,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import "./NotificationItem.css";
@@ -41,6 +43,18 @@ const TYPE_CONFIG = {
     detail: "Someone interacted with your post.",
     icon: Heart,
     tone: "rose",
+  },
+  VERIFICATION_STATUS: {
+    label: "Verification",
+    detail: "Your provider verification status changed.",
+    icon: ShieldCheck,
+    tone: "green",
+  },
+  ADMIN_ANNOUNCEMENT: {
+    label: "Admin announcement",
+    detail: "The PetNexus team sent an announcement.",
+    icon: Megaphone,
+    tone: "blue",
   },
 };
 
@@ -92,6 +106,7 @@ function getRelatedLabel(notification) {
     ADOPTION_POST: "Adoption post",
     POST: "Post",
     USER: "Profile",
+    VERIFICATION_REQUEST: "Verification request",
   };
 
   const label = labels[notification.relatedEntityType];

@@ -484,4 +484,10 @@ export async function deleteAdminPost(postId) {
     });
 }
 
+export async function sendAdminBroadcastNotification({ title, message }) {
+    return http("/api/admin/notifications/broadcast", {
+        method: "POST",
+        body: JSON.stringify({ title, message }),
+    });
+}
 

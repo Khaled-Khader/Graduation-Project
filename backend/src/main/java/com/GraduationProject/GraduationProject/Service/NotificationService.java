@@ -4,7 +4,9 @@ import com.GraduationProject.GraduationProject.DTO.CreateNotificationDTO;
 import com.GraduationProject.GraduationProject.DTO.NotificationDTO;
 import com.GraduationProject.GraduationProject.Entity.Notification;
 import com.GraduationProject.GraduationProject.Entity.Users;
+import com.GraduationProject.GraduationProject.Enum.EnumRole;
 import com.GraduationProject.GraduationProject.Enum.NotificationType;
+import com.GraduationProject.GraduationProject.Enum.UserAccountStatus;
 import com.GraduationProject.GraduationProject.Repository.NotificationRepository;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Security.UserPrinciple;
@@ -54,25 +56,37 @@ public class NotificationService {
         ));
 
         Notification notification = new Notification();
-        notification.setUser(user);
-        notification.setType(parseNotificationType(dto.getType()));
-        notification.setTitle(dto.getTitle());
-        notification.setMessage(dto.getMessage());
-        notification.setRelatedId(dto.getRelatedId());
+        return saveNotificationForUser(user, dto, notification);
+    }
 
-        if (dto.getRelatedEntityType() != null) {
-            notification.setRelatedEntityType(
-                    parseRelatedEntityType(dto.getRelatedEntityType())
+    @Transactional
+    public int broadcastAdminAnnouncement(String title, String message) {
+        String cleanedTitle = title == null ? "" : title.trim();
+        String cleanedMessage = message == null ? "" : message.trim();
+        if (cleanedTitle.isBlank() || cleanedMessage.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Title and message are required"
             );
         }
 
-        notification = notificationRepository.save(notification);
+        List<Users> recipients = usersRepository.findByRoleNotAndAccountStatus(
+                EnumRole.ADMIN,
+                UserAccountStatus.ACTIVE
+        );
 
-        // Send real-time notification via WebSocket
-        broadcastNotification(user.getId(), NotificationDTO.fromEntity(notification));
+        CreateNotificationDTO dto = new CreateNotificationDTO(
+                null,
+                NotificationType.ADMIN_ANNOUNCEMENT.name(),
+                cleanedTitle,
+                cleanedMessage,
+                null,
+                null
+        );
 
-        log.info("Notification created for user {}: {}", user.getId(), notification.getTitle());
-        return NotificationDTO.fromEntity(notification);
+        recipients.forEach(user -> saveNotificationForUser(user, dto, new Notification()));
+        log.info("Admin announcement sent to {} users: {}", recipients.size(), cleanedTitle);
+        return recipients.size();
     }
 
     /**
@@ -197,6 +211,31 @@ public class NotificationService {
         } catch (Exception e) {
             log.error("Failed to broadcast notification to user {}: {}", userId, e.getMessage());
         }
+    }
+
+    private NotificationDTO saveNotificationForUser(
+            Users user,
+            CreateNotificationDTO dto,
+            Notification notification
+    ) {
+        notification.setUser(user);
+        notification.setType(parseNotificationType(dto.getType()));
+        notification.setTitle(dto.getTitle());
+        notification.setMessage(dto.getMessage());
+        notification.setRelatedId(dto.getRelatedId());
+
+        if (dto.getRelatedEntityType() != null) {
+            notification.setRelatedEntityType(
+                    parseRelatedEntityType(dto.getRelatedEntityType())
+            );
+        }
+
+        notification = notificationRepository.save(notification);
+        NotificationDTO notificationDTO = NotificationDTO.fromEntity(notification);
+        broadcastNotification(user.getId(), notificationDTO);
+
+        log.info("Notification created for user {}: {}", user.getId(), notification.getTitle());
+        return notificationDTO;
     }
 
     private NotificationType parseNotificationType(String type) {

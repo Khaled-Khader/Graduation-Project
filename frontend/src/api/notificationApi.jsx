@@ -8,6 +8,8 @@ const DEFAULT_NOTIFICATION_TITLES = {
   ADOPTION_STATUS: "Adoption update",
   POST_COMMENT: "New comment",
   POST_INTERACTION: "Post interaction",
+  VERIFICATION_STATUS: "Verification update",
+  ADMIN_ANNOUNCEMENT: "Admin announcement",
 };
 
 function toBoolean(value) {

@@ -52,6 +52,7 @@ export function useNotifications() {
     queryKey: ["notifications"],
     queryFn: ({ pageParam = 0 }) => fetchNotifications(pageParam),
     initialPageParam: 0,
+    refetchInterval: 10000,
     getNextPageParam: (lastPage) => {
       if (!lastPage || lastPage.last) {
         return undefined;
@@ -64,11 +65,13 @@ export function useNotifications() {
   const unreadQuery = useQuery({
     queryKey: ["unreadNotifications"],
     queryFn: fetchUnreadNotifications,
+    refetchInterval: 10000,
   });
 
   const unreadCountQuery = useQuery({
     queryKey: ["notificationUnreadCount"],
     queryFn: getUnreadNotificationCount,
+    refetchInterval: 10000,
   });
 
   const refreshNotifications = useCallback(() => {

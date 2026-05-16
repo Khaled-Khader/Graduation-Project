@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   FileText,
   LogOut,
+  Megaphone,
+  Send,
   ShieldCheck,
   Trash2,
   UserCog,
@@ -20,6 +22,7 @@ import {
   fetchAdminUsers,
   fetchAdminVerifications,
   rejectAdminVerification,
+  sendAdminBroadcastNotification,
   updateAdminUserStatus,
 } from "../util/http";
 
@@ -27,6 +30,7 @@ const tabs = [
   { id: "users", label: "Users", icon: Users },
   { id: "verifications", label: "Verifications", icon: ShieldCheck },
   { id: "posts", label: "Posts", icon: FileText },
+  { id: "broadcast", label: "Broadcast", icon: Megaphone },
 ];
 
 const roleOptions = ["OWNER", "VET", "CLINIC", "ADMIN"];
@@ -74,6 +78,14 @@ function StatusBadge({ value }) {
       {value || "N/A"}
     </span>
   );
+}
+
+function isPdfUrl(url) {
+  return (url || "").split("?")[0].toLowerCase().endsWith(".pdf");
+}
+
+function verificationDocumentUrl(request) {
+  return request.documentPreviewUrl || request.documentUrl;
 }
 
 function ActionButton({ children, tone = "neutral", ...props }) {
@@ -139,8 +151,9 @@ function AdminHeader() {
   );
 }
 
-function TabButton({ tab, active, onClick }) {
+function TabButton({ tab, active, onClick, count = 0 }) {
   const Icon = tab.icon;
+  const hasCount = count > 0;
 
   return (
     <button
@@ -154,6 +167,11 @@ function TabButton({ tab, active, onClick }) {
     >
       <Icon size={18} />
       {tab.label}
+      {hasCount && (
+        <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-sm">
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
     </button>
   );
 }
@@ -394,7 +412,11 @@ function VerificationsSection() {
                   </td>
                 </tr>
               ) : (
-                requests.map((request) => (
+                requests.map((request) => {
+                  const reviewUrl = verificationDocumentUrl(request);
+                  const isPdf = isPdfUrl(request.documentUrl);
+
+                  return (
                   <tr key={request.id} className="align-top text-white/85">
                     <td className="px-4 py-4">
                       <p className="font-semibold text-white">{request.providerEmail}</p>
@@ -402,13 +424,13 @@ function VerificationsSection() {
                     </td>
                     <td className="px-4 py-4">
                       <a
-                        href={request.documentUrl}
+                        href={reviewUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-2 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
                       >
                         <FileText size={16} />
-                        {request.documentType || "DOCUMENT"}
+                        {isPdf ? "Preview PDF" : request.documentType || "DOCUMENT"}
                       </a>
                     </td>
                     <td className="px-4 py-4">
@@ -459,7 +481,8 @@ function VerificationsSection() {
                       )}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -583,6 +606,87 @@ function PostsSection() {
   );
 }
 
+function BroadcastSection() {
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [sentCount, setSentCount] = useState(null);
+
+  const broadcastMutation = useMutation({
+    mutationFn: sendAdminBroadcastNotification,
+    onSuccess: (data) => {
+      setTitle("");
+      setMessage("");
+      setSentCount(data?.deliveredCount ?? 0);
+    },
+  });
+
+  const canSend = title.trim().length > 0 && message.trim().length > 0;
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    if (!canSend || broadcastMutation.isPending) return;
+
+    setSentCount(null);
+    broadcastMutation.mutate({
+      title: title.trim(),
+      message: message.trim(),
+    });
+  }
+
+  return (
+    <section className="space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="grid gap-4 rounded-lg border border-white/10 bg-[#0D1830] p-4"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-white">Broadcast notification</h2>
+            <p className="text-sm text-white/55">Send one announcement to all active users.</p>
+          </div>
+          <ActionButton
+            type="submit"
+            tone="success"
+            disabled={!canSend || broadcastMutation.isPending}
+          >
+            <Send size={16} />
+            {broadcastMutation.isPending ? "Sending..." : "Send"}
+          </ActionButton>
+        </div>
+
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          maxLength={120}
+          placeholder="Title"
+          className="min-h-11 rounded-lg border border-white/10 bg-white/10 px-3 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-[#1CE0B7]/70"
+        />
+
+        <textarea
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          rows={6}
+          maxLength={1000}
+          placeholder="Message"
+          className="min-h-36 resize-y rounded-lg border border-white/10 bg-white/10 px-3 py-3 text-sm text-white outline-none transition placeholder:text-white/40 focus:border-[#1CE0B7]/70"
+        />
+
+        {sentCount !== null && (
+          <p className="rounded-lg border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+            Announcement sent to {sentCount} users.
+          </p>
+        )}
+
+        {broadcastMutation.isError && (
+          <p className="rounded-lg border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {broadcastMutation.error.message}
+          </p>
+        )}
+      </form>
+    </section>
+  );
+}
+
 function Pagination({ page, totalPages, onPageChange }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-white/65">
@@ -603,9 +707,17 @@ function Pagination({ page, totalPages, onPageChange }) {
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState("users");
+  const { data: pendingVerificationRequests = [] } = useQuery({
+    queryKey: ["admin-verifications", "PENDING"],
+    queryFn: () => fetchAdminVerifications("PENDING"),
+    refetchInterval: 15000,
+  });
+
+  const pendingVerificationCount = pendingVerificationRequests.length;
   const ActiveSection = useMemo(() => {
     if (activeTab === "verifications") return VerificationsSection;
     if (activeTab === "posts") return PostsSection;
+    if (activeTab === "broadcast") return BroadcastSection;
     return UsersSection;
   }, [activeTab]);
 
@@ -620,6 +732,7 @@ export default function AdminDashboardPage() {
               tab={tab}
               active={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}
+              count={tab.id === "verifications" ? pendingVerificationCount : 0}
             />
           ))}
         </div>

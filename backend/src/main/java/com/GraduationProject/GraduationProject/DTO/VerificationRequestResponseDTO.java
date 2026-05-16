@@ -8,6 +8,7 @@ public record VerificationRequestResponseDTO(
         String providerEmail,
         String providerRole,
         String documentUrl,
+        String documentPreviewUrl,
         String documentPublicId,
         String documentType,
         String status,

@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,6 +20,7 @@ public interface UsersRepository extends JpaRepository<Users, Long> {
     boolean existsByEmail(String email);
     Users findByEmail(String email);
     Optional<Users> findById(Long id);
+    List<Users> findByRoleNotAndAccountStatus(EnumRole role, UserAccountStatus accountStatus);
 
     @Query("""
             SELECT u FROM Users u

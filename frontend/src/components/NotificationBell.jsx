@@ -16,6 +16,7 @@ export default function NotificationBell({ userId }) {
     queryKey: ["notificationUnreadCount"],
     queryFn: getUnreadNotificationCount,
     enabled: !!userId,
+    refetchInterval: 10000,
   });
 
   useEffect(() => {

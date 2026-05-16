@@ -61,6 +61,7 @@ public class Notification {
         CHAT,
         ADOPTION_POST,
         POST,
-        USER
+        USER,
+        VERIFICATION_REQUEST
     }
 }

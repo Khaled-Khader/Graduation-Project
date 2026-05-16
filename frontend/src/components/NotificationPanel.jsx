@@ -22,6 +22,10 @@ function getNotificationPath(notification) {
     return "/app";
   }
 
+  if (notification.relatedEntityType === "VERIFICATION_REQUEST") {
+    return "/app";
+  }
+
   if (notification.relatedEntityType === "USER" && notification.relatedId) {
     return `/app/profile/${notification.relatedId}`;
   }

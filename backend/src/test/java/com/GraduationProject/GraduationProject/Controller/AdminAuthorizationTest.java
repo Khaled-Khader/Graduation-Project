@@ -6,6 +6,7 @@ import com.GraduationProject.GraduationProject.Service.AdminService;
 import com.GraduationProject.GraduationProject.Service.AdoptionRequestService;
 import com.GraduationProject.GraduationProject.Service.ChatService;
 import com.GraduationProject.GraduationProject.Service.ClinicService;
+import com.GraduationProject.GraduationProject.Service.NotificationService;
 import com.GraduationProject.GraduationProject.Service.PetService;
 import com.GraduationProject.GraduationProject.Service.PostService;
 import com.GraduationProject.GraduationProject.Service.ServiceService;
@@ -45,6 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = {
                 AdminController.class,
+                AdminNotificationController.class,
                 AdminVerificationController.class,
                 PostController.class,
                 ChatController.class,
@@ -86,6 +88,9 @@ class AdminAuthorizationTest {
     @MockBean
     private ClinicService clinicService;
 
+    @MockBean
+    private NotificationService notificationService;
+
     @Test
     void adminTest_shouldAllowAdminOnly() throws Exception {
         mockMvc.perform(get("/api/admin/test").with(user("admin@test.com").roles("ADMIN")))
@@ -104,6 +109,31 @@ class AdminAuthorizationTest {
                 .andExpect(status().isOk());
 
         mockMvc.perform(get("/api/admin/users").with(user("vet@test.com").roles("VET")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminBroadcast_shouldRequireAdminRole() throws Exception {
+        when(notificationService.broadcastAdminAnnouncement(any(), any())).thenReturn(2);
+
+        String body = """
+                {
+                  "title": "Maintenance",
+                  "message": "PetNexus will be updated tonight."
+                }
+                """;
+
+        mockMvc.perform(post("/api/admin/notifications/broadcast")
+                        .with(user("admin@test.com").roles("ADMIN"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deliveredCount").value(2));
+
+        mockMvc.perform(post("/api/admin/notifications/broadcast")
+                        .with(user("owner@test.com").roles("OWNER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
                 .andExpect(status().isForbidden());
     }
 

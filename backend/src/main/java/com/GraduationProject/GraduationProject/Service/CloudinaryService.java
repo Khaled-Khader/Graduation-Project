@@ -64,8 +64,24 @@ public class CloudinaryService {
         String providerFolder = providerId == null
                 ? VERIFICATION_UPLOAD_FOLDER
                 : VERIFICATION_UPLOAD_FOLDER + "/" + providerId;
+        String resourceType = isImageOrPdf(file.getContentType()) ? "image" : "raw";
 
-        return upload(file, providerFolder, "auto", "verification-document");
+        return upload(file, providerFolder, resourceType, "verification-document");
+    }
+
+    public String buildVerificationPreviewUrl(String documentUrl, String publicId) {
+        if (!isCloudinaryImagePdf(documentUrl) || publicId == null || publicId.isBlank()) {
+            return documentUrl;
+        }
+
+        String previewPublicId = publicId.endsWith(".pdf")
+                ? publicId.substring(0, publicId.length() - 4)
+                : publicId;
+
+        return "https://res.cloudinary.com/" + cloudName
+                + "/image/upload/pg_1,f_jpg,q_auto/"
+                + previewPublicId
+                + ".jpg";
     }
 
     private CloudinaryUploadResult upload(MultipartFile file, String folder, String resourceType, String defaultFilename) {
@@ -173,6 +189,25 @@ public class CloudinaryService {
                 || contentType.equals("application/pdf")
                 || contentType.equals("application/msword")
                 || contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    }
+
+    private boolean isImageOrPdf(String contentType) {
+        if (contentType == null) {
+            return false;
+        }
+
+        String normalized = contentType.toLowerCase();
+        return normalized.startsWith("image/") || normalized.equals("application/pdf");
+    }
+
+    private boolean isCloudinaryImagePdf(String documentUrl) {
+        if (documentUrl == null || documentUrl.isBlank()) {
+            return false;
+        }
+
+        String normalizedUrl = documentUrl.split("\\?", 2)[0].toLowerCase();
+        return normalizedUrl.startsWith("https://res.cloudinary.com/" + cloudName + "/image/upload/")
+                && normalizedUrl.endsWith(".pdf");
     }
 
     private String sign(Map<String, String> params) {

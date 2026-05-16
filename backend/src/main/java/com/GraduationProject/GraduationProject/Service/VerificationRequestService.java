@@ -1,11 +1,14 @@
 package com.GraduationProject.GraduationProject.Service;
 
 import com.GraduationProject.GraduationProject.DTO.CloudinaryUploadResult;
+import com.GraduationProject.GraduationProject.DTO.CreateNotificationDTO;
 import com.GraduationProject.GraduationProject.DTO.VerificationRequestResponseDTO;
 import com.GraduationProject.GraduationProject.DTO.VerificationStatusResponseDTO;
+import com.GraduationProject.GraduationProject.Entity.Notification;
 import com.GraduationProject.GraduationProject.Entity.Users;
 import com.GraduationProject.GraduationProject.Entity.VerificationRequest;
 import com.GraduationProject.GraduationProject.Enum.EnumRole;
+import com.GraduationProject.GraduationProject.Enum.NotificationType;
 import com.GraduationProject.GraduationProject.Enum.VerificationStatus;
 import com.GraduationProject.GraduationProject.Repository.UsersRepository;
 import com.GraduationProject.GraduationProject.Repository.VerificationRequestRepository;
@@ -27,17 +30,20 @@ public class VerificationRequestService {
     private final UsersRepository usersRepository;
     private final CloudinaryService cloudinaryService;
     private final ProviderVerificationService providerVerificationService;
+    private final NotificationService notificationService;
 
     public VerificationRequestService(
             VerificationRequestRepository verificationRequestRepository,
             UsersRepository usersRepository,
             CloudinaryService cloudinaryService,
-            ProviderVerificationService providerVerificationService
+            ProviderVerificationService providerVerificationService,
+            NotificationService notificationService
     ) {
         this.verificationRequestRepository = verificationRequestRepository;
         this.usersRepository = usersRepository;
         this.cloudinaryService = cloudinaryService;
         this.providerVerificationService = providerVerificationService;
+        this.notificationService = notificationService;
     }
 
     public VerificationStatusResponseDTO getCurrentProviderStatus(UserPrinciple currentUser) {
@@ -95,7 +101,9 @@ public class VerificationRequestService {
         request.setReviewedBy(getUser(adminUser));
         request.setReviewedAt(LocalDateTime.now());
         request.setRejectionReason(null);
-        return toDTO(verificationRequestRepository.save(request));
+        VerificationRequest savedRequest = verificationRequestRepository.save(request);
+        notifyProviderVerificationStatus(savedRequest, true);
+        return toDTO(savedRequest);
     }
 
     public VerificationRequestResponseDTO reject(Long requestId, String rejectionReason, UserPrinciple adminUser) {
@@ -108,7 +116,9 @@ public class VerificationRequestService {
         request.setReviewedBy(getUser(adminUser));
         request.setReviewedAt(LocalDateTime.now());
         request.setRejectionReason(rejectionReason.trim());
-        return toDTO(verificationRequestRepository.save(request));
+        VerificationRequest savedRequest = verificationRequestRepository.save(request);
+        notifyProviderVerificationStatus(savedRequest, false);
+        return toDTO(savedRequest);
     }
 
     private VerificationRequest createRequest(Users provider, MultipartFile file, String documentType) {
@@ -161,6 +171,27 @@ public class VerificationRequestService {
         return normalized.isBlank() ? "GENERAL" : normalized;
     }
 
+    private void notifyProviderVerificationStatus(VerificationRequest request, boolean approved) {
+        Users provider = request.getProvider();
+        if (provider == null) {
+            return;
+        }
+
+        String title = approved ? "Verification approved" : "Verification rejected";
+        String message = approved
+                ? "Your provider verification was approved. You can now use provider features."
+                : "Your provider verification was rejected. Reason: " + request.getRejectionReason();
+
+        notificationService.createNotification(new CreateNotificationDTO(
+                provider.getId(),
+                NotificationType.VERIFICATION_STATUS.name(),
+                title,
+                message,
+                request.getId(),
+                Notification.RelatedEntityType.VERIFICATION_REQUEST.name()
+        ));
+    }
+
     private VerificationRequestResponseDTO toDTO(VerificationRequest request) {
         Users provider = request.getProvider();
         Users reviewedBy = request.getReviewedBy();
@@ -171,6 +202,7 @@ public class VerificationRequestService {
                 provider != null ? provider.getEmail() : null,
                 request.getProviderRole() != null ? request.getProviderRole().name() : null,
                 request.getDocumentUrl(),
+                cloudinaryService.buildVerificationPreviewUrl(request.getDocumentUrl(), request.getDocumentPublicId()),
                 request.getDocumentPublicId(),
                 request.getDocumentType(),
                 request.getStatus() != null ? request.getStatus().name() : null,
